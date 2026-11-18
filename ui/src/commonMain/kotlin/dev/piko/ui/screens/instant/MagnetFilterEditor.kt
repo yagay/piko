@@ -106,12 +106,20 @@ internal fun MagnetFilterEditor(state: InstantSheetState, onDismiss: () -> Unit)
                     color = if (valid) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                 )
-                TextButton(onClick = {
-                    val defaults = MagnetFileSelectionFilter(enabled = enabled)
-                    categories = defaults.categories
-                    minText = defaults.minMb?.toString().orEmpty()
-                    maxText = defaults.maxMb?.toString().orEmpty()
-                }) { Text(tr("恢复默认规则", "Reset defaults", "初期設定に戻す", "기본값 복원", "還原預設規則")) }
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton(onClick = {
+                        val defaults = MagnetFileSelectionFilter(enabled = enabled)
+                        categories = defaults.categories
+                        minText = defaults.minMb?.toString().orEmpty()
+                        maxText = defaults.maxMb?.toString().orEmpty()
+                    }) { Text(tr("恢复默认", "Defaults", "初期設定", "기본값", "還原預設")) }
+                    TextButton(onClick = {
+                        state.restoreOriginalSelection()
+                        onDismiss()
+                    }, enabled = state.canEdit) {
+                        Text(tr("原始勾选", "Original selection", "元の選択", "원래 선택", "原始勾選"))
+                    }
+                }
             }
         },
         confirmButton = {
