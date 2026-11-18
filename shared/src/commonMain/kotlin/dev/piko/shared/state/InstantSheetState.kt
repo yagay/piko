@@ -267,6 +267,24 @@ class InstantSheetState private constructor(
         if (enabled) applyMagnetVideoFilter() else restoreOriginalSelection()
     }
 
+    /** Save preset for future magnets; reapply it now without changing the original file paths. */
+    fun updateMagnetFilter(minMb: Int?, maxMb: Int?, categories: Set<FileCategory>): Boolean {
+        if (!canEdit || !canFilterMagnet) return false
+        val updated = runCatching {
+            magnetFilter.copy(minMb = minMb, maxMb = maxMb, categories = categories)
+        }.getOrNull() ?: return false
+        magnetFilter = updated
+        scope.launch { preferences.setMagnetFileSelectionFilter(updated.encode()) }
+        if (updated.enabled) applyMagnetVideoFilter()
+        return true
+    }
+
+    fun restoreMagnetFilterDefaults() {
+        if (!canEdit || !canFilterMagnet) return
+        val defaults = MagnetFileSelectionFilter(enabled = magnetFilter.enabled)
+        updateMagnetFilter(defaults.minMb, defaults.maxMb, defaults.categories)
+    }
+
     val hasPickedFiles: Boolean
         get() = saveIssue != null || hasPendingOfflineSubmission || (selectionPicked && selectedIndices.isNotEmpty()) || batch?.rows?.any { it.state.hasPickedFiles } == true
 
