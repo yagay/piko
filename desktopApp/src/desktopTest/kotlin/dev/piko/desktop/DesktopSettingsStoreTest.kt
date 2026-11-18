@@ -2,6 +2,7 @@ package dev.piko.desktop
 
 import dev.piko.shared.auth.PlainFileVault
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
 import java.io.File
 import java.nio.file.Files
 import java.util.Properties
@@ -87,6 +88,21 @@ class DesktopSettingsStoreTest {
         storeDownloadDirectory(chosen)
 
         assertEquals(chosen.absoluteFile, DesktopSettingsStore(file, programDirectory = program, workingDirectory = elsewhere).downloadDirectory)
+    }
+
+    @Test
+    fun windowsMagnetSizeAndCategoryFilterSurvivesRestart() = runBlocking {
+        val store = DesktopSettingsStore(file, programDirectory = null, workingDirectory = elsewhere)
+        val prefs = DesktopPikoPreferences(store) { error("Magnet rules must not unlock secrets") }
+        assertEquals("true:0:500", prefs.magnetFileSelectionFilterFlow.first())
+        val custom = "true:100:15000:VIDEO,SUBTITLE"
+        prefs.setMagnetFileSelectionFilter(custom)
+        assertEquals(custom, prefs.magnetFileSelectionFilterFlow.first())
+        store.close()
+        val reopened = DesktopPikoPreferences(DesktopSettingsStore(file, programDirectory = null, workingDirectory = elsewhere)) {
+            error("No secrets required")
+        }
+        assertEquals(custom, reopened.magnetFileSelectionFilterFlow.first())
     }
 
     @Test
