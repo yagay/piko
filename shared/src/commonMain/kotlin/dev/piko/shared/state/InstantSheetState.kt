@@ -232,6 +232,41 @@ class InstantSheetState private constructor(
         private set
     private var selectionPicked by mutableStateOf(false)
 
+    var magnetFilter by mutableStateOf(MagnetFileSelectionFilter())
+        private set
+
+    /** Only resolved magnet links use this preset; shares and URL probes retain their original selection. */
+    val canFilterMagnet: Boolean get() = resolution != null && normalizedMagnet != null
+
+    val magnetFilterMatchCount: Int
+        get() = if (canFilterMagnet) items.count(magnetFilter::matches) else 0
+
+    fun applyMagnetVideoFilter() {
+        if (!canEdit || !canFilterMagnet) return
+        resetEditableAttempt()
+        selectedIndices = matchingMagnetVideoIndices(items, magnetFilter)
+        sourceSelectionEdited = true
+        selectionPicked = true
+    }
+
+    fun restoreOriginalSelection() {
+        if (!canEdit || resolution == null) return
+        resetEditableAttempt()
+        // Use the same tree defaults that were produced during the original resolution.
+        selectedIndices = originalSelection
+        sourceSelectionEdited = false
+        selectionPicked = false
+    }
+
+    private var originalSelection by mutableStateOf<Set<Int>>(emptySet())
+
+    fun setMagnetFilterEnabled(enabled: Boolean) {
+        if (!canEdit || !canFilterMagnet) return
+        magnetFilter = magnetFilter.copy(enabled = enabled)
+        scope.launch { preferences.setMagnetFileSelectionFilter(magnetFilter.encode()) }
+        if (enabled) applyMagnetVideoFilter() else restoreOriginalSelection()
+    }
+
     val hasPickedFiles: Boolean
         get() = saveIssue != null || hasPendingOfflineSubmission || (selectionPicked && selectedIndices.isNotEmpty()) || batch?.rows?.any { it.state.hasPickedFiles } == true
 
@@ -915,6 +950,7 @@ class InstantSheetState private constructor(
         tree = null
         canonical = null
         selectedIndices = emptySet()
+        originalSelection = emptySet()
         sourceSelectionEdited = false
         selectionPicked = false
         errorMessage = null
@@ -977,8 +1013,13 @@ class InstantSheetState private constructor(
         expandedGroups.clear()
         showsOnlyUnindexed = false
         folderName = built.folderName
-        selectedIndices = if (data.items.size == 1 && normalizedMagnet == null) setOf(0) else built.defaultSelection
-        selectionPicked = false
+        originalSelection = if (data.items.size == 1 && normalizedMagnet == null) setOf(0) else built.defaultSelection
+        magnetFilter = MagnetFileSelectionFilter.decode(preferences.magnetFileSelectionFilterFlow.first())
+        selectedIndices = if (normalizedMagnet != null && magnetFilter.enabled) {
+            matchingMagnetVideoIndices(items, magnetFilter)
+        } else originalSelection
+        sourceSelectionEdited = normalizedMagnet != null && magnetFilter.enabled
+        selectionPicked = normalizedMagnet != null && magnetFilter.enabled
         if (isRoot) scope.launch { refreshRemainingBytes() }
     }
 
