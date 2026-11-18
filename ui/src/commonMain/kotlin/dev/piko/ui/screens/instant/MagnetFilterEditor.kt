@@ -127,8 +127,7 @@ internal fun MagnetFilterEditor(state: InstantSheetState, onDismiss: () -> Unit)
                 label = tr("保存并应用", "Save & apply", "保存して適用", "저장 및 적용", "儲存並套用"),
                 enabled = state.canEdit && valid,
                 onClick = {
-                    if (state.updateMagnetFilter(min, max, categories)) {
-                        state.setMagnetFilterEnabled(enabled)
+                    if (state.updateMagnetFilter(min, max, categories, enabled)) {
                         onDismiss()
                     }
                 },
