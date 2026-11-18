@@ -32,15 +32,6 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- 注册为磁力、eD2k 与迅雷链接协议处理器 -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="magnet" />
-                <data android:scheme="ed2k" />
-                <data android:scheme="thunder" />
-            </intent-filter>
             <!-- 打开 .torrent 文件：在本地换算成磁力链接交给添加链接面板。文件管理器与浏览器下载
                  多按扩展名给出这个类型；报成 application/octet-stream 的认不出来，只能经分享上传 -->
             <intent-filter>
@@ -105,18 +96,35 @@
                 <data android:host="www.pickpackapp.com" />
                 <data android:pathPrefix="/s/" />
             </intent-filter>
-            <!-- 注册接收外部文本分享（含磁力链接或分享链接的文本） -->
-            <intent-filter>
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/plain" />
-            </intent-filter>
             <!-- 接收外部分享的文件，上传到网盘。文本分享同样匹配，由 MainActivity 按有无 EXTRA_STREAM 区分 -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+
+        <!-- Independent magnet dialog: external VIEW/SEND does not open the full app. -->
+        <activity
+            android:name=".ExternalMagnetActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.Piko.ExternalMagnet"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="magnet" />
+                <data android:scheme="ed2k" />
+                <data android:scheme="thunder" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
 
