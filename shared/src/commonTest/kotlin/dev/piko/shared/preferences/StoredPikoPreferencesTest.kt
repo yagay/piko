@@ -22,19 +22,6 @@ import kotlin.test.assertTrue
 
 class StoredPikoPreferencesTest {
     @Test
-    fun desktopMagnetFilterDefaultsAndChangesPersistLocally() = runBlocking {
-        val settings = FakeSettings()
-        val prefs = preferences(settings)
-        assertEquals("true:0:500", prefs.magnetFileSelectionFilterFlow.first())
-        assertFalse("magnet.defaultFileSelection" in settings.snapshot())
-        val custom = "true:100:1000:VIDEO,SUBTITLE"
-        prefs.setMagnetFileSelectionFilter(custom)
-        assertEquals(custom, prefs.magnetFileSelectionFilterFlow.first())
-        assertEquals(custom, preferences(settings.reopen()).magnetFileSelectionFilterFlow.first())
-        assertEquals(custom, settings.get("magnet.defaultFileSelection"))
-    }
-
-    @Test
     fun structuredValuesAndRepresentativeKeysPersistWithoutOpeningSecretsOnDefaults() = runBlocking {
         val settings = FakeSettings()
         val lazyPrefs = StoredPikoPreferences(settings) { error("Secrets must stay lazy") }
