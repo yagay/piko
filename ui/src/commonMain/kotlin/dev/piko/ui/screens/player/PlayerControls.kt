@@ -569,6 +569,10 @@ internal fun PlayerBottomBar(
     showEpisodeSkip: Boolean,
     /** 窄窗口：选集只留图标，见下。 */
     compactWidth: Boolean,
+    /** Android removes volume, speed and rotation from the bottom bar only. */
+    simplifiedAndroidControls: Boolean = false,
+    /** Hidden controls + horizontal seek: show only the seek bar and time. */
+    seekOnly: Boolean = false,
     hasPrevious: Boolean,
     hasNext: Boolean,
     onPrevious: () -> Unit,
@@ -617,10 +621,22 @@ internal fun PlayerBottomBar(
             thumbOnHoverOnly = thumbOnHoverOnly,
             onScrub = handleScrub,
         )
+        if (seekOnly) {
+            Spacer(Modifier.height(4.dp))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                PlayerTimeReadout(
+                    positionMillisProvider = positionMillisProvider,
+                    scrubPositionMillis = scrubPositionMillis,
+                    previewPositionMillis = previewPositionMillis,
+                    durationMillis = durationMillis,
+                )
+            }
+            return@Column
+        }
         Spacer(Modifier.height(4.dp))
         // Android portrait: keep playlist navigation accessible without squeezing the
         // time, speed, playlist and fullscreen controls into a single narrow row.
-        if (showEpisodeSkip && compactWidth) {
+        if (showEpisodeSkip && compactWidth && !simplifiedAndroidControls && !seekOnly) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
@@ -649,13 +665,13 @@ internal fun PlayerBottomBar(
         ) {
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                 // 换集在时间前面，照多数播放器底栏的排法。没有上一集或下一集时禁用而不是隐藏，时间不会左右跳
-                if (showEpisodeSkip && !compactWidth) {
+                if (showEpisodeSkip && (!compactWidth || simplifiedAndroidControls)) {
                     PlayerIconButton(icon = Icons.Filled.SkipPrevious, label = tr("上一集", "Previous episode", "前のエピソード", "이전 에피소드", "上一集"), onClick = onPrevious, enabled = hasPrevious, shortcut = "PageUp")
                     PlayerIconButton(icon = Icons.Filled.SkipNext, label = tr("下一集", "Next episode", "次のエピソード", "다음 에피소드", "下一集"), onClick = onNext, enabled = hasNext, shortcut = "PageDown")
                     Spacer(Modifier.width(8.dp))
                 }
                 // 照 YouTube 放在换集之后、时间之前，右边一组的位置不变
-                if (volume != null) {
+                if (volume != null && !simplifiedAndroidControls) {
                     PlayerVolumeControl(
                         volume = volume,
                         // 窄窗口只留静音键，滚轮在键上照样能调
@@ -674,7 +690,7 @@ internal fun PlayerBottomBar(
                 )
             }
 
-            if (playbackSpeed != null) {
+            if (playbackSpeed != null && !simplifiedAndroidControls) {
                 // 浮层锚在这个 Box 上，出现在按钮正上方
                 Box {
                     PlayerChipButton(
@@ -703,7 +719,7 @@ internal fun PlayerBottomBar(
             }
             // 一次转 90 度，与 R 键相同。原先在播放设置里列四个角度，要转画面得先开面板，
             // 桌面上转了窗口还跟着对调，这一步该是顺手就点的
-            if (onRotate != null) {
+            if (onRotate != null && !simplifiedAndroidControls) {
                 PlayerIconButton(icon = Icons.Filled.Rotate90DegreesCw, label = tr("顺时针旋转 90 度", "Rotate 90° clockwise", "右に90度回転", "시계 방향으로 90도 회전", "順時針旋轉 90 度"), onClick = onRotate, shortcut = "R")
             }
             PlayerIconButton(
