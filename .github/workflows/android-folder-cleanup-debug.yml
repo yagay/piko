@@ -1,0 +1,32 @@
+name: Android Folder Cleanup Debug
+
+on:
+  push:
+    branches:
+      - feature/android-folder-auto-cleanup
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-arm64-debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Build ARM64 debug
+        run: ./gradlew :app:assembleDebug -Ppiko.androidArm64Only=true --no-daemon --stacktrace
+      - name: Upload ARM64 APK
+        if: success()
+        uses: actions/upload-artifact@v6
+        with:
+          name: piko-android-arm64-folder-cleanup-debug
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
