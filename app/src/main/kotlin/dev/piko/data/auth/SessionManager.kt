@@ -133,6 +133,7 @@ class SessionManager(private val context: Context) : PikoUserPreferences {
     }
 
     private object PreferencesKeys {
+        val MAGNET_FILE_SELECTION_FILTER = stringPreferencesKey("magnet_file_selection_filter_v1")
         val SAVE_AS_REFERENCE = booleanPreferencesKey("save_as_reference")
         val DOWNLOAD_DIR_PATH = stringPreferencesKey("download_dir_path")
         val SPOILER_BLUR_ENABLED = booleanPreferencesKey("spoiler_blur_enabled")
@@ -361,6 +362,16 @@ class SessionManager(private val context: Context) : PikoUserPreferences {
     override suspend fun setNameParsingEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.NAME_PARSING_ENABLED] = enabled
+        }
+    }
+
+    override val magnetFileSelectionFilterFlow: Flow<String> = preference { preferences ->
+        preferences[PreferencesKeys.MAGNET_FILE_SELECTION_FILTER] ?: "true:0:500"
+    }
+
+    override suspend fun setMagnetFileSelectionFilter(value: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.MAGNET_FILE_SELECTION_FILTER] = value
         }
     }
 
