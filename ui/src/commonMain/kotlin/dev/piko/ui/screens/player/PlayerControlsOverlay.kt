@@ -116,6 +116,8 @@ fun MobilePlayerControls(
     hasNext: Boolean = false,
     /** Show previous/next buttons on compact Android portrait layouts. */
     showCompactEpisodeSkip: Boolean = false,
+    /** Android-only decluttered bottom bar; desktop and iOS retain their layouts. */
+    simplifiedAndroidControls: Boolean = false,
     onPrevious: () -> Unit = {},
     onNext: () -> Unit = {},
     onSelectEntry: (PlaylistEntry) -> Unit = {},
@@ -263,6 +265,7 @@ fun MobilePlayerControls(
         }
     }
     val bottomBarVisible = (chromeVisible || seekPreviewMillis != null) && !ui.isEditingCropRegion
+    val seekOnly = !chromeVisible && seekPreviewMillis != null
     val centerVisible = ((chromeVisible && !ui.isBoosting) || (isLoading && (chromeVisible || stalledLoading)) || centerIndicator != null) && errorMessage == null && !ui.isEditingCropRegion
 
     BackHandler(enabled = isFullscreen && !ui.isEditingCropRegion && !ui.isSpeedPopupOpen && ui.openSheet == null, onBack = onToggleFullscreen)
@@ -481,6 +484,8 @@ fun MobilePlayerControls(
                         showEpisodes = hasPlaylist,
                         showEpisodeSkip = hasPlaylist && (!compactWidth || showCompactEpisodeSkip),
                         compactWidth = compactWidth,
+                        simplifiedAndroidControls = simplifiedAndroidControls,
+                        seekOnly = seekOnly,
                         hasPrevious = hasPrevious,
                         hasNext = hasNext,
                         onPrevious = {
@@ -538,7 +543,7 @@ fun MobilePlayerControls(
             }
 
             PlayerHud(
-                indicator = if (ui.isEditingCropRegion) null else hudIndicator,
+                indicator = if (ui.isEditingCropRegion || seekOnly) null else hudIndicator,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
