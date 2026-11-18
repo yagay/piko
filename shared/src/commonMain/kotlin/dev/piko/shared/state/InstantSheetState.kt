@@ -753,6 +753,15 @@ class InstantSheetState private constructor(
         previewFile(item.file, index)
     }
 
+    /** Resolve the exact previewed cloud ID back to its magnet file.
+     * Names alone are ambiguous when a torrent contains duplicates. */
+    fun sourceForPreview(fileId: String): io.github.nihildigit.pikpak.ResolvedFile? =
+        items.firstOrNull { item ->
+            val gcid = item.file.gcid
+            gcid != null && previewedIds[gcid] == fileId
+        }?.file
+
+
     suspend fun leaseForArchiveBrowse(file: io.github.nihildigit.pikpak.ResolvedFile): Result<String> {
         val gcid = file.gcid ?: return Result.failure(IllegalStateException(tr("未收录的压缩包需先通过离线下载保存至网盘", "Save this unindexed archive via cloud download before opening", "未収録の圧縮ファイルは、先にクラウドダウンロードでドライブに保存してください", "미등록 압축 파일은 먼저 클라우드 다운로드로 드라이브에 저장해 주세요", "未收錄的壓縮檔需先透過離線下載儲存至雲端硬碟")))
         previewedIds[gcid]?.let { return Result.success(it) }
