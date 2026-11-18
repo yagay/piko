@@ -409,11 +409,6 @@ fun MobilePlayerControls(
                         onDismiss = { ui.showResumeTip = false },
                     )
                 }
-                FullscreenPromptButton(
-                    visible = !isFullscreen && !ui.isLocked && !isLandscape && isLandscapeVideo == true &&
-                        errorMessage == null && !ui.isEditingCropRegion && !isSeeking,
-                    onClick = onToggleFullscreen,
-                )
                 RestoreCropPromptButton(
                     visible = chromeVisible && !isSeeking && aspectRatio == PlayerAspectRatio.RegionCrop && errorMessage == null,
                     onClick = {
