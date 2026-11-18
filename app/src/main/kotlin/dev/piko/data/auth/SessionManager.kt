@@ -365,6 +365,13 @@ class SessionManager(private val context: Context) : PikoUserPreferences {
         }
     }
 
+    override val magnetPlaybackRetentionDaysFlow: Flow<Int> =
+        preference { it[intPreferencesKey("magnet_playback_retention_days")] ?: 7 }
+    override suspend fun setMagnetPlaybackRetentionDays(days: Int) {
+        require(days in 0..365)
+        context.dataStore.edit { it[intPreferencesKey("magnet_playback_retention_days")] = days }
+    }
+
     override val magnetFileSelectionFilterFlow: Flow<String> = preference { preferences ->
         preferences[PreferencesKeys.MAGNET_FILE_SELECTION_FILTER] ?: "true:0:500"
     }
