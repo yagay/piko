@@ -813,10 +813,65 @@ internal fun ColumnScope.ResolutionSection(
 
     if (!showFileSelection) return
 
+    if (state.canFilterMagnet) {
+        MagnetVideoFilterControls(state)
+    }
+
     // 列表连同它的页眉占去剩下的高度，短列表照常收缩
     Column(modifier = Modifier.weight(1f, fill = false)) {
         SelectionHeader(state, isMaximized = false, onToggleMaximized = onMaximizeTree)
         FileTreeList(state, onDownloaded = onDownloaded, modifier = Modifier.weight(1f, fill = false), retainedListState = fileListState)
+    }
+}
+
+/**
+ * Preset selects video files between 0 and 500 MB by default on Android.
+ * The original file tree remains fully visible and individually editable.
+ * Cloud offline downloads can still fetch the whole pack before pruning!
+ */
+@Composable
+private fun MagnetVideoFilterControls(state: InstantSheetState) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Checkbox(
+                checked = state.magnetFilter.enabled,
+                onCheckedChange = state::setMagnetFilterEnabled,
+                enabled = state.canEdit,
+            )
+            Text(
+                tr("默认选择视频（0–500 MB）", "Default video selection (0–500 MB)", "動画を初期選択（0–500 MB）", "동영상 기본 선택 (0–500 MB)", "預設選取影片（0–500 MB）"),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Text(
+            tr("匹配 ${state.magnetFilterMatchCount} 项 · 实际已选 ${state.sourceSelectedIndices.size} / ${state.items.size} 项，可在下方手动勾选",
+                "Matched ${state.magnetFilterMatchCount}; selected ${state.sourceSelectedIndices.size} / ${state.items.size}. Adjust below.",
+                "一致 ${state.magnetFilterMatchCount} 件・選択済 ${state.sourceSelectedIndices.size} / ${state.items.size}",
+                "일치 ${state.magnetFilterMatchCount}개 · 선택 ${state.sourceSelectedIndices.size} / ${state.items.size}",
+                "符合 ${state.magnetFilterMatchCount} 項 · 已選 ${state.sourceSelectedIndices.size} / ${state.items.size} 項"),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = state::applyMagnetVideoFilter, enabled = state.canEdit) {
+                Text(tr("重新应用筛选", "Reapply filter", "フィルターを再適用", "필터 다시 적용", "重新套用篩選"))
+            }
+            TextButton(onClick = state::restoreOriginalSelection, enabled = state.canEdit) {
+                Text(tr("恢复原始选择", "Restore original selection", "元の選択に戻す", "원래 선택 복원", "還原原始選取"))
+            }
+        }
+        if (state.savePlan?.route == SaveRoute.OFFLINE_PACK) {
+            Text(
+                tr("注意：云端离线仍会先下载完整磁力，完成后将未勾选的文件永久删除；不是服务器端按文件下载。",
+                    "Cloud offline downloads the full torrent first, then permanently removes unselected files.",
+                    "クラウドでは全体をダウンロード後、未選択ファイルを完全削除します。",
+                    "클라우드는 전체 다운로드 후 선택하지 않은 파일을 영구 삭제합니다.",
+                    "雲端仍先下載全部，完成後永久刪除未選檔案。"),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
     }
 }
 
