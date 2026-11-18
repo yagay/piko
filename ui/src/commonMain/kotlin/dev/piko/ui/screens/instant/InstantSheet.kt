@@ -312,6 +312,7 @@ internal fun InstantSheetContent(
                     Column(Modifier.weight(.45f).fillMaxHeight().verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         InstantBody(state, false, notice, showReceipt, showSelection = false)
+                        if (state.canFilterMagnet) MagnetVideoFilterControls(state)
                         Footer()
                     }
                     Column(Modifier.weight(.55f).fillMaxHeight()) {
@@ -540,7 +541,7 @@ private fun offlineConfirmOf(state: InstantSheetState, action: InstantPrimaryAct
     val plan = state.savePlan.takeIf { state.resolution != null && !state.contentMissing && !state.hasInstantRetry && state.saveIssue?.requiresInspection != true }
     val fallback = plan?.fallback
     return when {
-        !state.confirmsOffline -> null
+        !state.confirmsOffline && !(plan?.route == SaveRoute.OFFLINE_PACK && plan.prunedCount > 0) -> null
         action.kind == InstantActionKind.SUBMIT_OFFLINE -> OfflineConfirm.WholeLink
         plan == null || plan.blocked || plan.route != SaveRoute.OFFLINE_PACK -> null
         fallback != null -> OfflineConfirm.PackOrInstant(plan, fallback)
@@ -628,10 +629,21 @@ private fun OfflineConfirmDialog(
             tr("占用 ${confirm.plan.packBytes.toReadableSize()} 网盘空间与 1 次离线下载额度$count。", "requires ${confirm.plan.packBytes.toReadableSize()} of storage and 1 cloud download quota$count.", "${confirm.plan.packBytes.toReadableSize()} の容量と1回の利用枠を使用します$count。", "${confirm.plan.packBytes.toReadableSize()} 공간과 할당량 1회를 사용합니다$count.", "占用 ${confirm.plan.packBytes.toReadableSize()} 雲端硬碟空間與 1 次離線下載額度$count。") +
             tr("也可仅秒传已收录的 ${confirm.fallback.fileCount} 个文件。", "Alternatively, instantly save the ${confirm.fallback.fileCount} indexed files only.", "収録済みの ${confirm.fallback.fileCount} ファイルのみをインスタント保存することも可能です。", "등록된 파일 ${confirm.fallback.fileCount}개만 즉시 저장할 수도 있습니다.", "亦可僅秒傳已收錄的 ${confirm.fallback.fileCount} 個檔案。")
     }
+    val pruningWarning = when (confirm) {
+        is OfflineConfirm.Pack -> confirm.plan.prunedCount
+        is OfflineConfirm.PackOrInstant -> confirm.plan.prunedCount
+        OfflineConfirm.WholeLink -> 0
+    }
     PikoDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
-        text = { Text(message) },
+        text = { Text(message + if (pruningWarning > 0) tr(
+            " 完成后将永久删除未勾选的 $pruningWarning 个文件。此操作不经过回收站。",
+            " After download, $pruningWarning unselected files will be permanently deleted without using the recycle bin.",
+            " 完了後、未選択の $pruningWarning 件をゴミ箱を使わずに完全削除します。",
+            " 완료 후 선택하지 않은 $pruningWarning 개 파일을 휴지통 없이 영구 삭제합니다.",
+            " 完成後將永久刪除未選的 $pruningWarning 個檔案，不經回收站。",
+        ) else "") },
         confirmButton = {
             // 两条路并列时都是文字按钮：哪条更好由人按空间与次数定，给哪条底色都是替人选
             if (confirm is OfflineConfirm.PackOrInstant) {
