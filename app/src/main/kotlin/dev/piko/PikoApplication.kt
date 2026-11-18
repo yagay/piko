@@ -8,6 +8,7 @@ import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import dev.piko.cleanup.AndroidFolderAutoCleanup
 import dev.piko.data.auth.AndroidPikoSessionStore
 import dev.piko.data.auth.SessionManager
 import dev.piko.data.repository.DriveRepository
@@ -184,6 +185,7 @@ class PikoApplication : Application(), SingletonImageLoader.Factory {
                 }
             },
         )
+        services.folderAutoCleanup = AndroidFolderAutoCleanup(this, services.driveRepository)
         appScope.launch {
             PikoMemoryGovernor.Shared.policy.collect(::applyMemoryPolicy)
         }
