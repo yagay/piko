@@ -77,10 +77,13 @@ class PreviewTempFolder(
      * in a separate directory. The Android retention ledger owns their cleanup.
      * Never touch or reuse Piko-Temp's session-owned entries.
      */
-    suspend fun retainForPlayback(file: ResolvedFile): Result<String> = withContext(Dispatchers.Default) {
+    suspend fun retainForPlayback(file: ResolvedFile, expectedAccount: String): Result<String> = withContext(Dispatchers.Default) {
         lock.withLock {
             val owner = clients.currentClient.value
                 ?: return@withLock Result.failure(IllegalStateException("Not logged in"))
+            if (owner.account != expectedAccount) {
+                return@withLock Result.failure(IllegalStateException("Account changed while preparing magnet playback"))
+            }
             val folder = ensurePlaybackFolder(owner).getOrElse { return@withLock Result.failure(it) }
             instantRepo.instantCreate(owner, file, folder)
         }
