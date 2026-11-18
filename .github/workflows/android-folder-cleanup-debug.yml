@@ -6,6 +6,10 @@ on:
       - feature/android-folder-auto-cleanup
   workflow_dispatch:
 
+concurrency:
+  group: android-folder-cleanup-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
