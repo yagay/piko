@@ -184,6 +184,7 @@ private class DriveViewEvents(
     val onSetShowExtensions: (Boolean) -> Unit,
     val onOpenSelectedGallery: (List<FileStat>) -> Unit,
     val onRefresh: () -> Unit,
+    val onOpenFolderCleanup: () -> Unit,
     val onRequestNewFolder: () -> Unit,
     val onRequestRename: (FileStat) -> Unit,
     val onRequestBatchRename: (List<FileStat>, Boolean) -> Unit,
@@ -392,6 +393,22 @@ fun DriveScreen(
     val folderStack by state.folderStack.collectAsStateWithLifecycle()
     val activeFolder = folderStack.lastOrNull() ?: PathBreadcrumb(currentFolderId, currentFolderName)
     val activeFolderId = activeFolder.id
+    var folderCleanupVisible by remember { mutableStateOf(false) }
+    val cleanup = services.folderAutoCleanup
+    val canCleanup = cleanup != null && currentAccount != null &&
+        activeFolderId.isNotBlank() && !LocalLocation.isLocal(activeFolderId) &&
+        state.libraryView == null && state.archiveView == null
+    LaunchedEffect(currentAccount, activeFolderId, canCleanup) {
+        if (!canCleanup) return@LaunchedEffect
+        val account = currentAccount ?: return@LaunchedEffect
+        cleanup?.checkOnOpen(account, activeFolderId)?.let { result ->
+            result.onSuccess { count ->
+                if (count > 0) snackbarHostState.showSnackbar("自动清理：已移入回收站 $count 个文件")
+            }.onFailure { error ->
+                snackbarHostState.showSnackbar("文件夹自动清理失败：${error.message ?: "未知错误"}")
+            }
+        }
+    }
     val inTrash = state.libraryView == DriveLibrary.TRASH
     val galleryActive = gallery.shown && gallery.root?.id == activeFolderId && !inTrash &&
         state.archiveView == null && state.libraryView == null && !state.isSearchOpen
@@ -601,6 +618,7 @@ fun DriveScreen(
         onSetShowExtensions = viewModel::setShowExtensions,
         onOpenSelectedGallery = { files -> viewModel.openSelectedGallery(files, folderStack, galleryShowImages) },
         onRefresh = { viewModel.refresh(galleryActive) },
+        onOpenFolderCleanup = { folderCleanupVisible = true },
         onRequestNewFolder = viewModel::requestNewFolder,
         onRequestRename = viewModel::requestRename,
         onRequestBatchRename = viewModel::requestBatchRename,
@@ -636,6 +654,17 @@ fun DriveScreen(
         contentFrame = contentFrame,
         modifier = modifier,
     )
+
+    if (folderCleanupVisible && canCleanup && cleanup != null && currentAccount != null) {
+        FolderCleanupDialog(
+            account = currentAccount,
+            folderId = activeFolderId,
+            folderName = activeFolder.name,
+            cleanup = cleanup,
+            onDismiss = { folderCleanupVisible = false },
+            onMessage = { message -> scope.launch { snackbarHostState.showSnackbar(message) } },
+        )
+    }
 
     DriveDialogHost(
         dialog = viewModel.activeDialog,
@@ -1393,6 +1422,7 @@ private fun DriveScreenContent(
                             onLeaveLibrary = ::leaveLibrary,
                             onFindDuplicates = { findDuplicates(activeFolder) },
                             onCanonicalNaming = { events.onRequestCanonicalFolder(activeFolder) },
+                            onFolderCleanup = events.onOpenFolderCleanup.takeIf { services.folderAutoCleanup != null && !inTrash && activeFolderId.isNotBlank() && !LocalLocation.isLocal(activeFolderId) && state.archiveView == null && state.libraryView == null },
                             onDuplicateKindChange = onDuplicateKindChange,
                             onGalleryShownChange = changeGalleryShown,
                             onFeedShownChange = changeFeedShown,
