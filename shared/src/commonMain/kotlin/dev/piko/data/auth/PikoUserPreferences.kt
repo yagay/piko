@@ -73,6 +73,10 @@ enum class AppLanguage(val tag: String, val nativeLabel: String) {
 }
 
 interface PikoUserPreferences {
+    /** Device-only magnet default file selection. Non-Android targets remain unchanged. */
+    val magnetFileSelectionFilterFlow: Flow<String> get() = flowOf("false:0:500")
+    suspend fun setMagnetFileSelectionFilter(value: String) {}
+
     /** 当前设备记住的引用保存选择，不参与跨设备设置同步。 */
     val saveAsReferenceFlow: Flow<Boolean> get() = kotlinx.coroutines.flow.flowOf(false)
     suspend fun setSaveAsReference(enabled: Boolean) {}
