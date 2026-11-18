@@ -376,6 +376,11 @@ class PikoServices(
         )
     }
 
+    /** Public entry for Android's floating external magnet window.
+     * Keep destination binding private to the UI module. */
+    fun openExternalMagnetDraft(link: String): dev.piko.shared.state.InstantDraft =
+        instantSession.openDraft(link, saveTargets.context)
+
     val addLink by lazy { dev.piko.shared.presentation.AddLinkViewModel(instantSession) }
 
     /** 挂在进程级服务上，网盘页被压栈页临时盖住而离开组合时状态不丢；主动关掉面板即结束会话，见 [SegmentSession]。 */
