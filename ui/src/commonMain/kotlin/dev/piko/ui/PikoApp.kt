@@ -21,6 +21,8 @@ import dev.piko.ui.platform.PikoPlatform
 import dev.piko.ui.screens.archive.ArchiveExtractHost
 import dev.piko.ui.screens.auth.LoginScreen
 import dev.piko.ui.screens.upload.UploadRequestHost
+import dev.piko.ui.screens.instant.ExternalMagnetImportHost
+import dev.piko.shared.state.InstantDraft
 import dev.piko.ui.theme.Appearance
 import dev.piko.ui.theme.LocalPikoMotion
 import dev.piko.ui.theme.MotionStyle
@@ -43,6 +45,9 @@ fun PikoApp(
     videoPlayer: VideoPlayerHost,
     modifier: Modifier = Modifier,
     onLanguageChanged: (AppLanguage) -> Unit = {},
+    externalImportDraft: InstantDraft? = null,
+    onExternalImportDismiss: () -> Unit = {},
+    onExternalPreview: (String, String) -> Unit = { _, _ -> },
 ) {
     val appLanguage by services.preferences.appLanguageFlow.collectAsStateWithLifecycle(initialValue = PikoLocale.preference)
     // 必须在组合阶段同步应用语言偏好并切好平台资源环境，禁止延后到 LaunchedEffect，否则 stringResource 与 tr() 会在首轮重组时各读新旧两套语言
@@ -85,7 +90,15 @@ fun PikoApp(
                         is AppState.Login -> LoginScreen(onCancel = if (state.adding) clientManager::cancelAddingAccount else null)
                         // 按账号区分：换号时整个主界面重建，各页的记忆状态（滚动、展开、选中）不带到另一个账号。
                         // 退出登录后 currentClient 变空，根状态自动回到 Login
-                        is AppState.Main -> PikoMainScaffold(account = state.account, onLogout = {}, videoPlayer = videoPlayer)
+                        is AppState.Main -> if (externalImportDraft != null) {
+                            ExternalMagnetImportHost(
+                                draft = externalImportDraft,
+                                onDismiss = onExternalImportDismiss,
+                                onPreview = onExternalPreview,
+                            )
+                        } else {
+                            PikoMainScaffold(account = state.account, onLogout = {}, videoPlayer = videoPlayer)
+                        }
                     }
                 }
                 // 解压的密码框放在网盘页之外：离开网盘页后，加密包仍要能问到密码
@@ -94,7 +107,7 @@ fun PikoApp(
                     UploadRequestHost(services.uploadManager, services.saveTargets.context)
                 }
                 // 放在根状态之外：登录前后切换时弹窗不跟着重建
-                platform.updater?.let { updater ->
+                if (externalImportDraft == null) platform.updater?.let { updater ->
                     StartupUpdatePrompt(updater = updater, preferences = services.preferences)
                 }
             }
