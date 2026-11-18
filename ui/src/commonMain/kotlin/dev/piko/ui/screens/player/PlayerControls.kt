@@ -618,6 +618,30 @@ internal fun PlayerBottomBar(
             onScrub = handleScrub,
         )
         Spacer(Modifier.height(4.dp))
+        // Android portrait: keep playlist navigation accessible without squeezing the
+        // time, speed, playlist and fullscreen controls into a single narrow row.
+        if (showEpisodeSkip && compactWidth) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                PlayerIconButton(
+                    icon = Icons.Filled.SkipPrevious,
+                    label = tr("上一部", "Previous video", "前の動画", "이전 동영상", "上一部"),
+                    onClick = onPrevious,
+                    enabled = hasPrevious,
+                )
+                Spacer(Modifier.width(24.dp))
+                PlayerIconButton(
+                    icon = Icons.Filled.SkipNext,
+                    label = tr("下一部", "Next video", "次の動画", "다음 동영상", "下一部"),
+                    onClick = onNext,
+                    enabled = hasNext,
+                )
+            }
+            Spacer(Modifier.height(2.dp))
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -625,7 +649,7 @@ internal fun PlayerBottomBar(
         ) {
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                 // 换集在时间前面，照多数播放器底栏的排法。没有上一集或下一集时禁用而不是隐藏，时间不会左右跳
-                if (showEpisodeSkip) {
+                if (showEpisodeSkip && !compactWidth) {
                     PlayerIconButton(icon = Icons.Filled.SkipPrevious, label = tr("上一集", "Previous episode", "前のエピソード", "이전 에피소드", "上一集"), onClick = onPrevious, enabled = hasPrevious, shortcut = "PageUp")
                     PlayerIconButton(icon = Icons.Filled.SkipNext, label = tr("下一集", "Next episode", "次のエピソード", "다음 에피소드", "下一集"), onClick = onNext, enabled = hasNext, shortcut = "PageDown")
                     Spacer(Modifier.width(8.dp))
