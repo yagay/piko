@@ -522,6 +522,7 @@ fun MediampVideoPlayerScreen(
                 hasPrevious = state.previousEntry != null,
                 hasNext = state.nextEntry != null,
                 showCompactEpisodeSkip = true,
+                simplifiedAndroidControls = true,
                 onPrevious = state::playPrevious,
                 onNext = state::playNext,
                 onSelectEntry = state::playEntry,
