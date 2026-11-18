@@ -90,8 +90,6 @@ class StoredPikoPreferences(
     private val folderMapOpen = MutableStateFlow(settings.get(KEY_FOLDER_MAP_OPEN) == "true")
     private val folderMapPinned = MutableStateFlow(settings.get(KEY_FOLDER_MAP_PINNED) == "true")
     private val heuristic = MutableStateFlow(settings.get(KEY_HEURISTIC, "true").toBoolean())
-    // Device-local (not synchronized): desktop magnets use the same filter editor as Android.
-    private val magnetFileSelection = MutableStateFlow(settings.get("magnet.defaultFileSelection", "true:0:500"))
     private val nameParsing = MutableStateFlow(settings.get(KEY_NAME_PARSING, "true").toBoolean())
     private val bundleSubtitles = MutableStateFlow(settings.get(KEY_BUNDLE_SUBTITLES, "true").toBoolean())
     private val autoCleanNames = MutableStateFlow(settings.get(KEY_AUTO_CLEAN_NAMES, "false").toBoolean())
@@ -227,12 +225,6 @@ class StoredPikoPreferences(
     override suspend fun setHeuristicFilterEnabled(enabled: Boolean) {
         settings.set(KEY_HEURISTIC, enabled.toString())
         heuristic.value = enabled
-    }
-
-    override val magnetFileSelectionFilterFlow: Flow<String> = magnetFileSelection.asStateFlow()
-    override suspend fun setMagnetFileSelectionFilter(value: String) {
-        magnetFileSelection.value = value
-        settings.set("magnet.defaultFileSelection", value)
     }
 
     override val nameParsingFlow: Flow<Boolean> = nameParsing.asStateFlow()
