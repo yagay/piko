@@ -1019,7 +1019,8 @@ class InstantSheetState private constructor(
             matchingMagnetVideoIndices(items, magnetFilter)
         } else originalSelection
         sourceSelectionEdited = normalizedMagnet != null && magnetFilter.enabled
-        selectionPicked = normalizedMagnet != null && magnetFilter.enabled
+        // A default preset does not count as a manual selection/edit for discard warnings.
+        selectionPicked = false
         if (isRoot) scope.launch { refreshRemainingBytes() }
     }
 
