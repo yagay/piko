@@ -105,6 +105,12 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".MagnetPlayerActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Piko"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode" />
+
         <!-- Independent magnet dialog: external VIEW/SEND does not open the full app. -->
         <activity
             android:name=".ExternalMagnetActivity"
