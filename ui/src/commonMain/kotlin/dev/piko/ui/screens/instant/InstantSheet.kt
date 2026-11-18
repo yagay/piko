@@ -840,144 +840,46 @@ internal fun ColumnScope.ResolutionSection(
 }
 
 /**
- * Android magnet default selection editor. Only updates selected file indices.
- * Manual adjustments in the original file tree are still allowed afterwards.
- * The server may still download the whole pack on the offline route.
+ * One small row instead of an expanded settings form. The file tree keeps most
+ * of the available height and manual file selection stays available.
  */
 @Composable
 private fun MagnetVideoFilterControls(state: InstantSheetState) {
     val filter = state.magnetFilter
-    var expanded by remember(state) { mutableStateOf(false) }
-    var minText by remember(state) { mutableStateOf(filter.minMb?.toString().orEmpty()) }
-    var maxText by remember(state) { mutableStateOf(filter.maxMb?.toString().orEmpty()) }
-    LaunchedEffect(filter.minMb, filter.maxMb) {
-        minText = filter.minMb?.toString().orEmpty()
-        maxText = filter.maxMb?.toString().orEmpty()
+    var showFilterEditor by remember(state) { mutableStateOf(false) }
+    val categorySummary = filter.categories.sortedBy { it.ordinal }.joinToString("、") { it.label }
+    val range = when {
+        filter.minMb == null && filter.maxMb == null -> tr("不限大小", "Any size", "制限なし", "크기 제한 없음", "不限大小")
+        filter.minMb == null -> "≤${filter.maxMb} MB"
+        filter.maxMb == null -> "≥${filter.minMb} MB"
+        else -> "${filter.minMb}–${filter.maxMb} MB"
     }
-    val min = if (minText.isBlank()) null else minText.toIntOrNull()
-    val max = if (maxText.isBlank()) null else maxText.toIntOrNull()
-    val valid = (minText.isBlank() || min != null) &&
-        (maxText.isBlank() || max != null) &&
-        (min == null || min in 0..MagnetFileSelectionFilter.MAX_MB) &&
-        (max == null || max in 0..MagnetFileSelectionFilter.MAX_MB) &&
-        (min == null || max == null || min <= max)
-
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Checkbox(
-                checked = filter.enabled,
-                onCheckedChange = state::setMagnetFilterEnabled,
-                enabled = state.canEdit,
-            )
-            Text(
-                tr("自动筛选磁力文件", "Auto-select magnet files", "マグネットファイルを自動選択", "마그넷 파일 자동 선택", "自動篩選磁力檔案"),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(onClick = { expanded = !expanded }) {
-                Text(if (expanded) tr("收起", "Hide", "閉じる", "접기", "收起") else tr("设置", "Configure", "設定", "설정", "設定"))
-            }
-        }
+    Row(
+        modifier = Modifier.fillMaxWidth().heightIn(min = 36.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
         Text(
-            tr("符合规则 ${state.magnetFilterMatchCount} 项 · 已选 ${state.sourceSelectedIndices.size} / ${state.items.size} 项",
-                "Matches ${state.magnetFilterMatchCount} · Selected ${state.sourceSelectedIndices.size} / ${state.items.size}",
-                "一致 ${state.magnetFilterMatchCount} · 選択 ${state.sourceSelectedIndices.size} / ${state.items.size}",
-                "일치 ${state.magnetFilterMatchCount} · 선택 ${state.sourceSelectedIndices.size} / ${state.items.size}",
-                "符合 ${state.magnetFilterMatchCount} 項 · 已選 ${state.sourceSelectedIndices.size} / ${state.items.size} 項"),
+            if (filter.enabled) "$categorySummary · $range" else tr("自动筛选已关闭", "Auto filter off", "自動選択オフ", "자동 선택 꺼짐", "自動篩選已關閉"),
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        if (expanded) {
-            Text(tr("保留文件分类（可多选）", "Keep file categories (multiple)", "ファイル種類（複数選択可）",
-                "파일 종류 (복수 선택)", "保留檔案分類（可多選）"),
-                style = MaterialTheme.typography.labelMedium)
-            val categories = FileCategory.entries
-            categories.chunked(3).forEach { rowCategories ->
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    rowCategories.forEach { category ->
-                        Row(
-                            modifier = Modifier.weight(1f),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Checkbox(
-                                checked = category in filter.categories,
-                                enabled = state.canEdit && (category !in filter.categories || filter.categories.size > 1),
-                                onCheckedChange = { checked ->
-                                    val chosen = if (checked) filter.categories + category else filter.categories - category
-                                    state.updateMagnetFilter(filter.minMb, filter.maxMb, chosen)
-                                },
-                            )
-                            Text(category.label, style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                }
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = minText,
-                    onValueChange = { minText = it.filter(Char::isDigit).take(7) },
-                    label = { Text(tr("最小 MB", "Min MB", "最小 MB", "최소 MB", "最小 MB")) },
-                    placeholder = { Text(tr("不限", "Any", "制限なし", "제한 없음", "不限")) },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                    enabled = state.canEdit,
-                    isError = !valid,
-                )
-                OutlinedTextField(
-                    value = maxText,
-                    onValueChange = { maxText = it.filter(Char::isDigit).take(7) },
-                    label = { Text(tr("最大 MB", "Max MB", "最大 MB", "최대 MB", "最大 MB")) },
-                    placeholder = { Text(tr("不限", "Any", "制限なし", "제한 없음", "不限")) },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                    enabled = state.canEdit,
-                    isError = !valid,
-                )
-            }
-            Text(
-                if (valid) tr("留空代表不限制；1 MB = 1,000,000 字节。",
-                    "Leave blank for no limit. 1 MB = 1,000,000 bytes.",
-                    "空欄は制限なし。1 MB = 1,000,000 バイト。",
-                    "빈칸은 제한 없음. 1 MB = 1,000,000 바이트.",
-                    "留空代表不限；1 MB = 1,000,000 位元組。")
-                else tr("请输入有效大小，且最小值不可大于最大值。",
-                    "Use valid sizes; minimum cannot exceed maximum.",
-                    "有効なサイズを入力してください。最小値は最大値以下にしてください。",
-                    "크기를 확인하세요. 최솟값은 최댓값보다 클 수 없습니다.",
-                    "請輸入有效大小，最小值不可大於最大值。"),
-                style = MaterialTheme.typography.bodySmall,
-                color = if (valid) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(
-                    onClick = { state.updateMagnetFilter(min, max, filter.categories) },
-                    enabled = state.canEdit && valid,
-                ) { Text(tr("保存并应用", "Save and apply", "保存して適用", "저장 및 적용", "儲存並套用")) }
-                TextButton(onClick = state::restoreMagnetFilterDefaults, enabled = state.canEdit) {
-                    Text(tr("恢复默认规则", "Reset filter", "初期設定に戻す", "기본 규칙 복원", "還原預設規則"))
-                }
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = state::applyMagnetVideoFilter, enabled = state.canEdit) {
-                Text(tr("重新筛选", "Reapply filter", "再適用", "필터 다시 적용", "重新篩選"))
-            }
-            TextButton(onClick = state::restoreOriginalSelection, enabled = state.canEdit) {
-                Text(tr("恢复原始选择", "Restore original selection", "元の選択に戻す", "원래 선택 복원", "還原原始選取"))
-            }
-        }
-        if (state.savePlan?.route == SaveRoute.OFFLINE_PACK) {
-            Text(
-                tr("注意：云端离线仍会先下载完整磁力，完成后将未勾选的文件永久删除；不是服务器端按文件下载。",
-                    "Cloud offline still downloads the full torrent, then permanently removes unselected files.",
-                    "クラウドでは全体をダウンロード後、未選択ファイルを完全削除します。",
-                    "클라우드는 전체 다운로드 후 선택하지 않은 파일을 영구 삭제합니다.",
-                    "雲端仍先下載全部，完成後永久刪除未選檔案。"),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-            )
+        Text(
+            tr("匹配 ${state.magnetFilterMatchCount}", "${state.magnetFilterMatchCount} matched",
+                "一致 ${state.magnetFilterMatchCount}", "일치 ${state.magnetFilterMatchCount}",
+                "符合 ${state.magnetFilterMatchCount}"),
+            maxLines = 1,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TextButton(onClick = { showFilterEditor = true }, enabled = state.canEdit) {
+            Text(tr("筛选", "Filter", "フィルター", "필터", "篩選"))
         }
     }
+    if (showFilterEditor) MagnetFilterEditor(state, onDismiss = { showFilterEditor = false })
 }
 
 /**
