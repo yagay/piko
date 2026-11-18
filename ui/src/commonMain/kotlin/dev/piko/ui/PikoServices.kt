@@ -78,6 +78,8 @@ class PikoServices(
     val metaTube: MetaTubeService? = null,
     localFileAccess: (((String) -> Unit) -> dev.piko.shared.data.LocalFileAccess)? = null,
     treeDatabaseFactory: PikoTreeDatabaseFactory? = null,
+    /** Android installs a cloud-folder cleanup engine; other platforms leave this unset. */
+    var folderAutoCleanup: FolderAutoCleanup? = null,
 ) {
     val memoryGovernor = dev.piko.shared.memory.PikoMemoryGovernor.Shared
     val workloadGovernor = dev.piko.shared.runtime.PikoWorkloadGovernor.Shared
