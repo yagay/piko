@@ -541,7 +541,7 @@ private fun offlineConfirmOf(state: InstantSheetState, action: InstantPrimaryAct
     val plan = state.savePlan.takeIf { state.resolution != null && !state.contentMissing && !state.hasInstantRetry && state.saveIssue?.requiresInspection != true }
     val fallback = plan?.fallback
     return when {
-        !state.confirmsOffline && !(plan?.route == SaveRoute.OFFLINE_PACK && plan.prunedCount > 0) -> null
+        !state.confirmsOffline && !(plan?.route == SaveRoute.OFFLINE_PACK && (plan?.prunedCount ?: 0) > 0) -> null
         action.kind == InstantActionKind.SUBMIT_OFFLINE -> OfflineConfirm.WholeLink
         plan == null || plan.blocked || plan.route != SaveRoute.OFFLINE_PACK -> null
         fallback != null -> OfflineConfirm.PackOrInstant(plan, fallback)
