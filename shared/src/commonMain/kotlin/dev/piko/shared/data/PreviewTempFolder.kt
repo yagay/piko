@@ -72,6 +72,42 @@ class PreviewTempFolder(
         }
     }
 
+    /**
+     * Unlike a regular preview lease, externally played magnet videos are saved
+     * in a separate directory. The Android retention ledger owns their cleanup.
+     * Never touch or reuse Piko-Temp's session-owned entries.
+     */
+    suspend fun retainForPlayback(file: ResolvedFile): Result<String> = withContext(Dispatchers.Default) {
+        lock.withLock {
+            val owner = clients.currentClient.value
+                ?: return@withLock Result.failure(IllegalStateException("Not logged in"))
+            val folder = ensurePlaybackFolder(owner).getOrElse { return@withLock Result.failure(it) }
+            instantRepo.instantCreate(owner, file, folder)
+        }
+    }
+
+    /** Delete only a verified retained playback entry, never an arbitrary drive file. */
+    suspend fun deleteRetainedPlayback(account: String, fileId: String): Boolean = withContext(Dispatchers.Default) {
+        lock.withLock {
+            val owner = clients.currentClient.value ?: return@withLock false
+            if (owner.account != account) return@withLock false
+            val folder = findPlaybackFolders(owner).firstOrNull() ?: return@withLock false
+            val found = owner.listFiles(folder).any { !it.isFolder && it.id == fileId }
+            if (!found) return@withLock true // Already removed manually.
+            runCatching { owner.batchDelete(listOf(fileId)) }
+                .onSuccess { driveRepo.applyChange(DriveChange.ContentsChanged(setOf(folder))) }
+                .onFailure { PikoLog.w(TAG, "Failed to remove expired retained playback", it) }
+                .isSuccess
+        }
+    }
+
+    private suspend fun findPlaybackFolders(owner: PikPakClient): List<String> =
+        owner.listFiles("").filter { it.isFolder && it.name == PLAYBACK_FOLDER_NAME }.map { it.id }
+
+    private suspend fun ensurePlaybackFolder(owner: PikPakClient): Result<String> = runCatching {
+        findPlaybackFolders(owner).firstOrNull() ?: owner.createFolder("", PLAYBACK_FOLDER_NAME)
+    }
+
     fun session(): Session = Session(clients.currentClient.value, sequence.getAndUpdate { it + 1 } + 1)
 
     /** Piko-Temp 的 ID，不存在就先建。 */
@@ -116,5 +152,6 @@ class PreviewTempFolder(
     companion object {
         private const val TAG = "PikoTemp"
         const val FOLDER_NAME = "Piko-Temp"
+        const val PLAYBACK_FOLDER_NAME = "Piko-Playback"
     }
 }
