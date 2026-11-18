@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /** 桌面持久化适配器，偏好键、默认值与机密访问策略由共享实现维护。 */
 class DesktopPikoPreferences(
-    settings: DesktopSettingsStore,
+    private val settings: DesktopSettingsStore,
     openSecrets: () -> SecretVault,
 ) : PikoUserPreferences by StoredPikoPreferences(DesktopPreferenceSettings(settings), openSecrets) {
     private val magnetFilter = MutableStateFlow(settings.get("magnet.defaultFileSelection", "true:0:500"))
