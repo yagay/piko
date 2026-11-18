@@ -252,9 +252,9 @@ internal fun InstantSheetContent(
                     rawUpdateReference(checked)
                 }
             }
-            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(reference, enabled = referenceEnabled,
+            Row(Modifier.fillMaxWidth().heightIn(min = 40.dp).toggleable(reference, enabled = referenceEnabled,
                 role = Role.Checkbox, onValueChange = updateReference), verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(reference, null, Modifier.size(48.dp).clearAndSetSemantics {}, enabled = referenceEnabled)
+                Checkbox(reference, null, Modifier.size(40.dp).clearAndSetSemantics {}, enabled = referenceEnabled)
                 Text(stringResource(Res.string.text_save_as_references), style = MaterialTheme.typography.bodyMedium)
             }
             val referenceStates = (batch?.rows?.map { it.state } ?: listOf(state)).filter { it.supportsReferenceSave }
@@ -293,7 +293,7 @@ internal fun InstantSheetContent(
                 .onPreviewKeyEvent(saveKeyHandler)
                 .padding(horizontal = if (inSideSheet) 16.dp else 24.dp)
                 .padding(bottom = if (inSideSheet) 16.dp else 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             val openedRow = batch?.openedRow
             if (batch != null) {
@@ -327,7 +327,7 @@ internal fun InstantSheetContent(
                 // 内容与保存栏分开：侧边面板里内容占满中间，保存栏钉在底部，解析前后、勾多勾少，按钮都在同一处
                 Column(
                     modifier = Modifier.weight(1f, fill = inSideSheet || fillHeight || isTreeMaximized),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     if (isTreeMaximized && state.resolution != null) {
                         Column(modifier = Modifier.weight(1f)) {
@@ -913,7 +913,7 @@ internal fun CanonicalNamesToggle(checked: Boolean, enabled: Boolean, onChange: 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 48.dp)
+            .heightIn(min = 40.dp)
             .toggleable(value = checked, enabled = enabled, role = Role.Checkbox, onValueChange = onChange),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -937,7 +937,7 @@ private fun SelectionHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 48.dp),
+            .heightIn(min = 40.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
