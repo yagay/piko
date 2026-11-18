@@ -49,6 +49,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -77,6 +79,13 @@ class PikoApplication : Application(), SingletonImageLoader.Factory {
     val downloadManager: PikoDownloadCoordinator get() = services.downloadManager
     val uploadManager: PikoUploadCoordinator get() = services.uploadManager
     val instantSession: InstantSession get() = services.instantSession
+
+    /** Persistent cloud copies used by external magnet playback, not ordinary previews. */
+    val magnetPlayback by lazy {
+        MagnetPlaybackStore(this, clientManager, services.previewTempFolder, appScope) {
+            sessionManager.magnetPlaybackRetentionDaysFlow.first()
+        }
+    }
 
     /** 首次用到时才建：开屏检查要等界面第一次组合，不必在 onCreate 里就先建一个 HTTP 客户端。 */
     val appUpdater by lazy { AppUpdater(this) }
@@ -186,6 +195,18 @@ class PikoApplication : Application(), SingletonImageLoader.Factory {
             },
         )
         services.folderAutoCleanup = AndroidFolderAutoCleanup(this, services.driveRepository)
+        // Recheck retained magnet copies at sign-in and every six hours while alive.
+        appScope.launch {
+            clientManager.currentClient.collectLatest { active ->
+                if (active != null) magnetPlayback.cleanupExpired()
+            }
+        }
+        appScope.launch {
+            while (isActive) {
+                delay(6 * 60 * 60 * 1000L)
+                magnetPlayback.cleanupExpired()
+            }
+        }
         appScope.launch {
             PikoMemoryGovernor.Shared.policy.collect(::applyMemoryPolicy)
         }
