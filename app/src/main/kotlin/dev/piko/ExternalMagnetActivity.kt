@@ -1,6 +1,9 @@
 package dev.piko
 
 import android.content.Intent
+import android.widget.Toast
+import dev.piko.data.repository.FileCategory
+import dev.piko.data.repository.fileCategory
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -61,11 +64,24 @@ class ExternalMagnetActivity : ComponentActivity() {
                     videoPlayer = VideoPlayerHost.InApp { _, _ -> },
                     externalImportDraft = draft,
                     onExternalImportDismiss = { dismiss() },
-                    onExternalPreview = { _, _ ->
-                        // Preview uses the full player host; the compact import
-                        // surface never fakes a playback result.
-                        startActivity(Intent(this@ExternalMagnetActivity, MainActivity::class.java))
-                        dismiss()
+                    onExternalPreview = { fileId, _ ->
+                        val sourceVideo = draft.state.sourceForPreview(fileId)
+                        if (sourceVideo == null || sourceVideo.name.fileCategory() != FileCategory.VIDEO) {
+                            Toast.makeText(this@ExternalMagnetActivity, "Video is not available", Toast.LENGTH_SHORT).show()
+                        } else {
+                            lifecycleScope.launch {
+                                val result = app.magnetPlayback.open(sourceVideo, draft.state.items.map { it.file })
+                                result.onSuccess { retainedId ->
+                                    startActivity(Intent(this@ExternalMagnetActivity, MagnetPlayerActivity::class.java).apply {
+                                        putExtra(MagnetPlayerActivity.EXTRA_FILE_ID, retainedId)
+                                        putExtra(MagnetPlayerActivity.EXTRA_FILE_NAME, sourceVideo.name)
+                                    })
+                                    dismiss()
+                                }.onFailure { failure ->
+                                    Toast.makeText(this@ExternalMagnetActivity, failure.message ?: "Unable to prepare video", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        }
                     },
                 )
                 LaunchedEffect(draft) {
