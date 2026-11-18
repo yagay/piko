@@ -23,6 +23,7 @@ import dev.piko.ui.screens.auth.LoginScreen
 import dev.piko.ui.screens.upload.UploadRequestHost
 import dev.piko.ui.screens.instant.ExternalMagnetImportHost
 import dev.piko.shared.state.InstantDraft
+import dev.piko.ui.navigation.Screen
 import dev.piko.ui.theme.Appearance
 import dev.piko.ui.theme.LocalPikoMotion
 import dev.piko.ui.theme.MotionStyle
@@ -48,6 +49,8 @@ fun PikoApp(
     externalImportDraft: InstantDraft? = null,
     onExternalImportDismiss: () -> Unit = {},
     onExternalPreview: (String, String) -> Unit = { _, _ -> },
+    externalPlayback: Screen.VideoPlayer? = null,
+    onExternalPlaybackDismiss: () -> Unit = {},
 ) {
     val appLanguage by services.preferences.appLanguageFlow.collectAsStateWithLifecycle(initialValue = PikoLocale.preference)
     // 必须在组合阶段同步应用语言偏好并切好平台资源环境，禁止延后到 LaunchedEffect，否则 stringResource 与 tr() 会在首轮重组时各读新旧两套语言
@@ -90,7 +93,11 @@ fun PikoApp(
                         is AppState.Login -> LoginScreen(onCancel = if (state.adding) clientManager::cancelAddingAccount else null)
                         // 按账号区分：换号时整个主界面重建，各页的记忆状态（滚动、展开、选中）不带到另一个账号。
                         // 退出登录后 currentClient 变空，根状态自动回到 Login
-                        is AppState.Main -> if (externalImportDraft != null) {
+                        is AppState.Main -> if (externalPlayback != null) {
+                            (videoPlayer as? VideoPlayerHost.InApp)?.content?.invoke(
+                                externalPlayback, onExternalPlaybackDismiss,
+                            )
+                        } else if (externalImportDraft != null) {
                             ExternalMagnetImportHost(
                                 draft = externalImportDraft,
                                 onDismiss = onExternalImportDismiss,
@@ -107,7 +114,7 @@ fun PikoApp(
                     UploadRequestHost(services.uploadManager, services.saveTargets.context)
                 }
                 // 放在根状态之外：登录前后切换时弹窗不跟着重建
-                if (externalImportDraft == null) platform.updater?.let { updater ->
+                if (externalImportDraft == null && externalPlayback == null) platform.updater?.let { updater ->
                     StartupUpdatePrompt(updater = updater, preferences = services.preferences)
                 }
             }
