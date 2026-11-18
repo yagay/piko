@@ -1032,6 +1032,21 @@ private fun FileTreeList(state: InstantSheetState, onDownloaded: () -> Unit, mod
                             ),
                         )
                     },
+                    trailing = {
+                        // This is the live import-tree row. The legacy InstantFileRow
+                        // already supported preview, but no longer renders in this UI.
+                        // Only indexed videos can be created instantly for playback.
+                        if (index != null) {
+                            if (state.canPreview(index)) {
+                                PreviewButton(
+                                    onClick = { state.preview(index) },
+                                    isPreviewing = state.previewingIndex == index,
+                                )
+                            } else if (!state.items[index].isInstantReady) {
+                                UnindexedMark()
+                            }
+                        }
+                    },
                 )
             }
         }
