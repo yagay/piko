@@ -32,6 +32,10 @@ val appVersionCode = providers.environmentVariable("PIKO_VERSION_CODE")
     .orElse(2001)
 require(appVersionCode.get() > 0) { "PIKO_VERSION_CODE must be greater than zero." }
 
+val androidArm64Only = providers.gradleProperty("piko.androidArm64Only")
+    .map { it.toBoolean() }
+    .orElse(false)
+
 val enableAbiSplits = providers.gradleProperty("piko.enableAbiSplits")
     .map { it.toBoolean() }
     .orElse(true)
@@ -47,8 +51,9 @@ android {
         abi {
             isEnable = enableAbiSplits.get()
             reset()
-            include("arm64-v8a", "armeabi-v7a", "x86_64")
-            isUniversalApk = true
+            if (androidArm64Only.get()) include("arm64-v8a")
+            else include("arm64-v8a", "armeabi-v7a", "x86_64")
+            isUniversalApk = !androidArm64Only.get()
         }
     }
 
