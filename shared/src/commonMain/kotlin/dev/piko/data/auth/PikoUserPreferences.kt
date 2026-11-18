@@ -74,6 +74,10 @@ enum class AppLanguage(val tag: String, val nativeLabel: String) {
 
 interface PikoUserPreferences {
     /** Device-only magnet default file selection. Non-Android targets remain unchanged. */
+    /** Retained external magnet video copies: 0 means delete after playback, 1–365 days otherwise. */
+    val magnetPlaybackRetentionDaysFlow: Flow<Int> get() = flowOf(7)
+    suspend fun setMagnetPlaybackRetentionDays(days: Int) {}
+
     val magnetFileSelectionFilterFlow: Flow<String> get() = flowOf("false:0:500")
     suspend fun setMagnetFileSelectionFilter(value: String) {}
 
