@@ -1422,7 +1422,7 @@ private fun DriveScreenContent(
                             onLeaveLibrary = ::leaveLibrary,
                             onFindDuplicates = { findDuplicates(activeFolder) },
                             onCanonicalNaming = { events.onRequestCanonicalFolder(activeFolder) },
-                            onFolderCleanup = events.onOpenFolderCleanup.takeIf { services.folderAutoCleanup != null && !inTrash && activeFolderId.isNotBlank() && !LocalLocation.isLocal(activeFolderId) && state.archiveView == null && state.libraryView == null },
+                            onFolderCleanup = events.onOpenFolderCleanup.takeIf { dev.piko.ui.LocalPikoServices.current.folderAutoCleanup != null && !inTrash && activeFolderId.isNotBlank() && !LocalLocation.isLocal(activeFolderId) && state.archiveView == null && state.libraryView == null },
                             onDuplicateKindChange = onDuplicateKindChange,
                             onGalleryShownChange = changeGalleryShown,
                             onFeedShownChange = changeFeedShown,
