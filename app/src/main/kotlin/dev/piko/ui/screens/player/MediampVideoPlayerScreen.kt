@@ -68,6 +68,7 @@ import coil3.compose.AsyncImage
 import dev.piko.PikoApplication
 import dev.piko.download.DownloadStatus
 import dev.piko.shared.media.player.PlayerScreenState
+import dev.piko.shared.media.player.PlaylistEntry
 import io.github.nihildigit.pikpak.FileStat
 import java.io.File
 
@@ -84,6 +85,7 @@ fun MediampVideoPlayerScreen(
     initialFileName: String,
     initialLocalPath: String? = null,
     initialStartMillis: Long? = null,
+    externalPlaylist: List<PlaylistEntry>? = null,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -150,10 +152,16 @@ fun MediampVideoPlayerScreen(
     val longPressSpeed by preferences.playerBoostSpeedFlow
         .collectAsStateWithLifecycle(initialValue = PlayerGestureDefaults.BOOST_SPEED)
 
-    LaunchedEffect(initialFileId) {
-        val siblings = driveRepo.siblingMedia(initialFileId)
-        siblingVideos = siblings.videos
-        state.playlist = playlistOf(siblingVideos, app.sessionManager, siblings.subtitles)
+    LaunchedEffect(initialFileId, externalPlaylist) {
+        if (externalPlaylist != null) {
+            // Externally opened magnet: siblings are prepared in the background in
+            // Piko-Playback. Never replace this list with the cloud folder listing.
+            state.playlist = externalPlaylist
+        } else {
+            val siblings = driveRepo.siblingMedia(initialFileId)
+            siblingVideos = siblings.videos
+            state.playlist = playlistOf(siblingVideos, app.sessionManager, siblings.subtitles)
+        }
     }
 
     // 内存任务表 App 重启就空：同目录元数据到了之后，用磁盘再验一次，
