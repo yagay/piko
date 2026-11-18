@@ -521,6 +521,7 @@ fun MediampVideoPlayerScreen(
                 currentFileId = state.fileId,
                 hasPrevious = state.previousEntry != null,
                 hasNext = state.nextEntry != null,
+                showCompactEpisodeSkip = true,
                 onPrevious = state::playPrevious,
                 onNext = state::playNext,
                 onSelectEntry = state::playEntry,
