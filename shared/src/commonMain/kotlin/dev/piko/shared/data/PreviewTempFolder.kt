@@ -148,7 +148,7 @@ class PreviewTempFolder(
         this is PikPakException &&
             httpStatus == 404 &&
             errorMessage.contains("file_invisible", ignoreCase = true) &&
-            (errorDescription.contains("folder", ignoreCase = true) ||
+            (errorDescription.orEmpty().contains("folder", ignoreCase = true) ||
                 message.orEmpty().contains("folder", ignoreCase = true))
 
     fun session(): Session = Session(clients.currentClient.value, sequence.getAndUpdate { it + 1 } + 1)
