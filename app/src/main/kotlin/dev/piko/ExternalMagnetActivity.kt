@@ -47,8 +47,9 @@ class ExternalMagnetActivity : ComponentActivity() {
                 forwardToMain(source)
                 return@launch
             }
-            val draft = app.instantSession.openDraft(link, app.services.saveTargets.context)
+            val draft = app.services.openExternalMagnetDraft(link)
             activeDraft = draft
+            val originalEditor = draft.state
             val appearanceFlow = app.sessionManager.appearanceFlow(app.platform.supportsDynamicColor)
             val initialAppearance = runBlocking { appearanceFlow.first() }
             setContent {
@@ -68,7 +69,7 @@ class ExternalMagnetActivity : ComponentActivity() {
                     },
                 )
                 LaunchedEffect(draft) {
-                    snapshotFlow { draft.submitted.isNotEmpty() }.first { it }
+                    snapshotFlow { draft.state !== originalEditor }.first { it }
                     // The save has been accepted and detached from its editor.
                     // Do not await completion, or cancel the processing scope.
                     dismiss()
