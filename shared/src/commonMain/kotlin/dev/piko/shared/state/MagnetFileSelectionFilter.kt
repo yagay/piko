@@ -21,7 +21,7 @@ data class MagnetFileSelectionFilter(
 
     fun matches(file: InstantFileItem): Boolean {
         val bytes = file.file.size
-        if (bytes < 0) return false // Unknown size: never silently select it.
+        if (bytes <= 0) return false // Zero/unknown size: never silently select it.
         return file.file.name.fileCategory() == FileCategory.VIDEO &&
             bytes >= minMb.toLong() * 1_000_000L &&
             bytes <= maxMb.toLong() * 1_000_000L
