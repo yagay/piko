@@ -23,7 +23,7 @@ import org.json.JSONObject
 /**
  * Retained magnet preview files are independent of Piko-Temp's short-lived preview
  * leases. An explicit file-ID + account ledger ensures expiry never deletes arbitrary
- * cloud files; playback IDs remain protected until the player is dismissed.
+ * cloud files; playback IDs remain activePlaybackIds until the player is dismissed.
  */
 class MagnetPlaybackStore(
     context: Context,
@@ -34,7 +34,7 @@ class MagnetPlaybackStore(
 ) {
     private val prefs = context.getSharedPreferences("magnet_playback_retention", Context.MODE_PRIVATE)
     private val lock = Mutex()
-    private val protected = mutableSetOf<String>()
+    private val activePlaybackIds = mutableSetOf<String>()
     private val prepared = mutableMapOf<String, String>()
     private var generation = 0L
 
@@ -90,8 +90,8 @@ class MagnetPlaybackStore(
         val selected = retain(account, chosen).getOrElse { return Result.failure(it) }
         lock.withLock {
             generation++
-            protected.clear()
-            protected += selected
+            activePlaybackIds.clear()
+            activePlaybackIds += selected
             currentFileId = selected
             playlist = listOf(PlaylistEntry(selected, chosen.name, chosen.name, size = chosen.size))
         }
@@ -107,7 +107,7 @@ class MagnetPlaybackStore(
                 ids += PlaylistEntry(id, file.name, file.name, size = file.size)
                 lock.withLock {
                     if (revision == generation) {
-                        protected += id
+                        activePlaybackIds += id
                         playlist = buildRawPlaylist(ids.toList())
                     }
                 }
@@ -118,7 +118,7 @@ class MagnetPlaybackStore(
 
     fun closePlayer() {
         generation++
-        protected.clear()
+        activePlaybackIds.clear()
         prepared.clear()
         currentFileId = null
         playlist = emptyList()
@@ -134,7 +134,7 @@ class MagnetPlaybackStore(
             val records = read().toMutableList()
             var changed = false
             for (record in records.toList()) {
-                if (record.account != account || record.at > cutoff || record.id in protected) continue
+                if (record.account != account || record.at > cutoff || record.id in activePlaybackIds) continue
                 if (preview.deleteRetainedPlayback(account, record.id)) {
                     records.remove(record)
                     changed = true
