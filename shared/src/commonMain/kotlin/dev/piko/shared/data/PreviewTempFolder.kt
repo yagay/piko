@@ -5,6 +5,7 @@ import dev.piko.shared.log.logFailure
 import dev.piko.shared.log.logFolder
 import io.github.nihildigit.pikpak.ResolvedFile
 import io.github.nihildigit.pikpak.PikPakClient
+import io.github.nihildigit.pikpak.PikPakException
 import io.github.nihildigit.pikpak.listFiles
 import io.github.nihildigit.pikpak.createFolder
 import io.github.nihildigit.pikpak.batchDelete
@@ -46,7 +47,8 @@ class PreviewTempFolder(
                 if (closed.value) return@withLock Result.failure(IllegalStateException("预览会话已结束"))
                 val folder = ensureFolder(owner).getOrElse { return@withLock Result.failure(it) }
                 if (closed.value) return@withLock Result.failure(IllegalStateException("预览会话已结束"))
-                instantRepo.instantCreate(owner, file, folder).onSuccess { fileId ->
+                val created = createInTempWithRecovery(owner, file, folder)
+                created.onSuccess { fileId ->
                     owned.getOrPut(id) { owner to HashSet() }.second.add(fileId)
                 }
             }
@@ -85,7 +87,14 @@ class PreviewTempFolder(
                 return@withLock Result.failure(IllegalStateException("Account changed while preparing magnet playback"))
             }
             val folder = ensurePlaybackFolder(owner).getOrElse { return@withLock Result.failure(it) }
-            instantRepo.instantCreate(owner, file, folder)
+            val first = instantRepo.instantCreate(owner, file, folder)
+            if (first.exceptionOrNull()?.isMissingTargetFolder() != true) return@withLock first
+            // Playback uses its own directory; a deleted folder must not
+            // make indexed videos appear unavailable.
+            PikoLog.w(TAG, "Retained playback folder missing (acct=${logAccountSlot(owner.account)}); recreating")
+            val replacement = runSuspendCatching { owner.createFolder("", PLAYBACK_FOLDER_NAME) }
+                .getOrElse { return@withLock Result.failure(it) }
+            instantRepo.instantCreate(owner, file, replacement)
         }
     }
 
@@ -110,6 +119,37 @@ class PreviewTempFolder(
     private suspend fun ensurePlaybackFolder(owner: PikPakClient): Result<String> = runCatching {
         findPlaybackFolders(owner).firstOrNull() ?: owner.createFolder("", PLAYBACK_FOLDER_NAME)
     }
+
+    /**
+     * A cached temp folder may have been removed by a previous session, another
+     * client, or a delayed cloud operation. Retry *only* the server's explicit
+     * missing-folder response; other 404s and permission errors must propagate.
+     * All operations happen under [lock], so clear() cannot race this recovery.
+     */
+    private suspend fun createInTempWithRecovery(
+        owner: PikPakClient,
+        file: ResolvedFile,
+        folder: String,
+    ): Result<String> {
+        val first = instantRepo.instantCreate(owner, file, folder)
+        if (first.exceptionOrNull()?.isMissingTargetFolder() != true) return first
+        folderIds.remove(owner.account)
+        PikoLog.w(TAG, "Temporary preview folder missing (acct=${logAccountSlot(owner.account)}); replacing cached folder ID")
+        val replacement = runSuspendCatching {
+            // Do not select the same failing ID from an eventually-consistent
+            // folder listing. A new temp directory has a distinct identity.
+            owner.createFolder("", FOLDER_NAME)
+        }.getOrElse { return Result.failure(it) }
+        folderIds[owner.account] = replacement
+        return instantRepo.instantCreate(owner, file, replacement)
+    }
+
+    private fun Throwable.isMissingTargetFolder(): Boolean =
+        this is PikPakException &&
+            httpStatus == 404 &&
+            errorMessage.contains("file_invisible", ignoreCase = true) &&
+            (errorDescription.contains("folder", ignoreCase = true) ||
+                message.orEmpty().contains("folder", ignoreCase = true))
 
     fun session(): Session = Session(clients.currentClient.value, sequence.getAndUpdate { it + 1 } + 1)
 
