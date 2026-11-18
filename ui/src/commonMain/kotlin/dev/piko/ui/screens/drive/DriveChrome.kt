@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.AccountTree
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowUpward
@@ -382,6 +383,7 @@ internal fun DriveCompactHeader(
     onLeaveLibrary: () -> Unit,
     onFindDuplicates: () -> Unit,
     onCanonicalNaming: () -> Unit,
+    onFolderCleanup: (() -> Unit)? = null,
     onDuplicateKindChange: (DuplicateKind) -> Unit,
     onGalleryShownChange: ((Boolean) -> Unit)?,
     onFeedShownChange: ((Boolean) -> Unit)?,
@@ -480,7 +482,11 @@ internal fun DriveCompactHeader(
                         SheetAction(Icons.Outlined.Refresh, tr("重新扫描", "Scan again", "再検索", "다시 검색", "重新掃描"), duplicateState::rescan, group = ActionGroup.Refresh),
                         SheetAction(Icons.Outlined.Close, tr("结束查重", "End duplicate search", "重複検索を終了", "중복 검색 종료", "結束重複檔案搜尋"), onCloseContext ?: onEndDuplicateSession, group = ActionGroup.Refresh),
                     )
-                } else emptyList(),
+                } else listOfNotNull(
+                    onFolderCleanup?.let { action ->
+                        SheetAction(Icons.Outlined.DeleteSweep, tr("文件夹自动清理", "Folder auto cleanup", "フォルダー自動整理", "폴더 자동 정리", "資料夾自動清理"), action)
+                    },
+                ),
                 trailing = buildList {
                     if (commands.gallery || galleryActive || (commands.feed && hasFeedEntry)) {
                         add(
