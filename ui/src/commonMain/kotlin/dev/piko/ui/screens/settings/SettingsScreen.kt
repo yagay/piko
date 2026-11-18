@@ -205,6 +205,25 @@ fun SettingsScreen(
     }
     var showPlaybackQuality by remember { mutableStateOf(false) }
     val playbackMaxHeight by sessionManager.playbackMaxHeightFlow.collectAsStateWithLifecycle(initialValue = 0)
+    val magnetRetentionDays by sessionManager.magnetPlaybackRetentionDaysFlow.collectAsStateWithLifecycle(initialValue = 7)
+    var showMagnetRetention by remember { mutableStateOf(false) }
+    if (showMagnetRetention) SettingsChoiceDialog(
+        icon = Icons.Outlined.PlayCircle,
+        title = tr("磁力临时播放保留时间", "Magnet playback retention", "マグネット再生ファイルの保持期間", "마그넷 재생 보관 기간", "磁力暫存播放保留時間"),
+        onDismiss = { showMagnetRetention = false },
+    ) {
+        listOf(0, 1, 3, 7, 14, 30, 90, 180, 365).forEach { days ->
+            SettingsChoiceOption(
+                title = if (days == 0) tr("播放结束后删除", "Delete after playback", "再生後に削除", "재생 종료 후 삭제", "播放結束後刪除")
+                    else tr("保留 $days 天", "Keep for $days days", "$days 日間保持", "$days 일 보관", "保留 $days 天"),
+                selected = magnetRetentionDays == days,
+                onClick = {
+                    scope.launch { sessionManager.setMagnetPlaybackRetentionDays(days) }
+                    showMagnetRetention = false
+                },
+            )
+        }
+    }
     var showDownloadQuality by remember { mutableStateOf(false) }
     val downloadMaxHeight by sessionManager.downloadMaxHeightFlow.collectAsStateWithLifecycle(initialValue = null)
 
@@ -492,6 +511,15 @@ fun SettingsScreen(
                     // 而配套字幕只在添加链接时起作用，与本机下载无关
                     section(SettingsSection.Saving) {
                         SettingsGroup(null) {
+                            SettingsNavigationRow(
+                                icon = Icons.Outlined.PlayCircle,
+                                title = tr("磁力视频临时保留", "Temporary magnet video retention", "マグネット動画の一時保存", "마그넷 동영상 임시 보관", "磁力影片暫存保留"),
+                                supporting = if (magnetRetentionDays == 0)
+                                    tr("退出播放后清理", "Remove after playback", "再生後に削除", "재생 후 삭제", "退出播放後清理")
+                                else tr("$magnetRetentionDays 天；到期自动清理独立临时播放目录", "$magnetRetentionDays days; clean up temporary playback files after expiry", "$magnetRetentionDays 日間；期限後に自動削除", "$magnetRetentionDays 일 후 임시 영상 자동 삭제", "$magnetRetentionDays 天；到期自動清理暫存播放目錄"),
+                                onClick = { showMagnetRetention = true },
+                                trailingIcon = null,
+                            )
                             val detectClipboard by sessionManager.autoDetectClipboardLinksFlow.collectAsStateWithLifecycle(initialValue = false)
                             SettingsSwitchRow(
                                 icon = Icons.Outlined.ContentPaste,
