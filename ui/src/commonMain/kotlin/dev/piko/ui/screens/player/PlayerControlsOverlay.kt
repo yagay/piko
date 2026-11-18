@@ -114,6 +114,8 @@ fun MobilePlayerControls(
     currentFileId: String = "",
     hasPrevious: Boolean = false,
     hasNext: Boolean = false,
+    /** Show previous/next buttons on compact Android portrait layouts. */
+    showCompactEpisodeSkip: Boolean = false,
     onPrevious: () -> Unit = {},
     onNext: () -> Unit = {},
     onSelectEntry: (PlaylistEntry) -> Unit = {},
@@ -477,7 +479,7 @@ fun MobilePlayerControls(
                         bufferedPositionMillisProvider = readBufferedPositionMillis,
                         playbackSpeed = playbackSpeed,
                         showEpisodes = hasPlaylist,
-                        showEpisodeSkip = hasPlaylist && !compactWidth,
+                        showEpisodeSkip = hasPlaylist && (!compactWidth || showCompactEpisodeSkip),
                         compactWidth = compactWidth,
                         hasPrevious = hasPrevious,
                         hasNext = hasNext,
