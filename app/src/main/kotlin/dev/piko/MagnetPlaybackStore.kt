@@ -66,7 +66,7 @@ class MagnetPlaybackStore(
         // Reuse this session's file, not any other account's previous session.
         val key = "$account|${file.path}|${file.gcid}"
         prepared[key]?.let { return Result.success(it) }
-        val saved = preview.retainForPlayback(file)
+        val saved = preview.retainForPlayback(file, account)
         saved.onSuccess { id ->
             lock.withLock {
                 prepared[key] = id
