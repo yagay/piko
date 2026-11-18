@@ -444,7 +444,7 @@ internal fun DriveCompactHeader(
                 ),
             )
         }
-        val hasMobileCommands = commands.paste || commands.findDuplicates || commands.canonicalNaming ||
+        val hasMobileCommands = onFolderCleanup != null || commands.paste || commands.findDuplicates || commands.canonicalNaming ||
             commands.gallery || galleryActive || (commands.feed && hasFeedEntry)
         val showMobileCommandBar = !isSearchOpen &&
             if (inDuplicates) duplicateState != null && !duplicateState.isScanning else hasMobileCommands
