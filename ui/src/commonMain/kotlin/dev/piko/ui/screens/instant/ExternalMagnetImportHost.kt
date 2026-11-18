@@ -1,5 +1,13 @@
 package dev.piko.ui.screens.instant
 
+import androidx.compose.ui.backhandler.BackHandler
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.TextButton
+import dev.piko.ui.components.PikoDialog
+import dev.piko.ui.components.PikoDialogConfirm
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,6 +34,30 @@ fun ExternalMagnetImportHost(
     onDismiss: () -> Unit,
     onPreview: (String, String) -> Unit,
 ) {
+    var confirmDiscard by remember(draft) { mutableStateOf(false) }
+    val requestClose = {
+        if (draft.endNeedsConfirm) confirmDiscard = true else onDismiss()
+    }
+    BackHandler { requestClose() }
+    if (confirmDiscard) {
+        PikoDialog(
+            onDismissRequest = { confirmDiscard = false },
+            title = { Text(tr("放弃选择？", "Discard selection?", "選択を破棄しますか？", "선택을 취소할까요?", "放棄選取？")) },
+            text = { Text(tr("尚未保存的文件勾选将丢失。", "Unsaved file selections will be lost.", "未保存の選択は失われます。", "저장하지 않은 선택이 사라집니다.", "未儲存的勾選將遺失。")) },
+            confirmButton = {
+                PikoDialogConfirm(
+                    tr("关闭", "Close", "閉じる", "닫기", "關閉"),
+                    destructive = true,
+                    onClick = { confirmDiscard = false; onDismiss() },
+                )
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDiscard = false }) {
+                    Text(tr("继续选择", "Keep selecting", "選択を続ける", "선택 계속", "繼續選擇"))
+                }
+            },
+        )
+    }
     Column(Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp),
@@ -37,7 +69,7 @@ fun ExternalMagnetImportHost(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f),
             )
-            IconButton(onClick = onDismiss) {
+            IconButton(onClick = requestClose) {
                 Icon(Icons.Outlined.Close, contentDescription = tr("关闭", "Close", "閉じる", "닫기", "關閉"))
             }
         }
