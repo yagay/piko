@@ -3,6 +3,7 @@ package dev.piko.shared.preferences
 import dev.piko.data.auth.AppLanguage
 import dev.piko.data.auth.PikoUserPreferences
 import dev.piko.data.auth.PlayerGestureDefaults
+import dev.piko.data.auth.PlayerControlsTiming
 import dev.piko.data.auth.SidePanelPrefs
 import dev.piko.data.auth.SnailMode
 import dev.piko.shared.auth.SecretVault
@@ -86,6 +87,10 @@ class StoredPikoPreferences(
     )
     private val playerBoostSpeed = MutableStateFlow(
         settings.get(KEY_PLAYER_BOOST_SPEED).toFloatOrNull() ?: PlayerGestureDefaults.BOOST_SPEED,
+    )
+    private val playerControlsAutoHideSeconds = MutableStateFlow(
+        PlayerControlsTiming.validated(settings.get(KEY_PLAYER_CONTROLS_AUTO_HIDE_SECONDS).toIntOrNull()
+            ?: PlayerControlsTiming.AUTO_HIDE_DEFAULT_SECONDS),
     )
     private val folderMapOpen = MutableStateFlow(settings.get(KEY_FOLDER_MAP_OPEN) == "true")
     private val folderMapPinned = MutableStateFlow(settings.get(KEY_FOLDER_MAP_PINNED) == "true")
@@ -201,6 +206,13 @@ class StoredPikoPreferences(
     override suspend fun setPlayerSeekStepSeconds(seconds: Int) {
         settings.set(KEY_PLAYER_SEEK_STEP_SECONDS, seconds.toString())
         playerSeekStepSeconds.value = seconds
+    }
+
+    override val playerControlsAutoHideSecondsFlow: Flow<Int> = playerControlsAutoHideSeconds.asStateFlow()
+    override suspend fun setPlayerControlsAutoHideSeconds(seconds: Int) {
+        require(seconds in PlayerControlsTiming.AutoHideChoicesSeconds)
+        settings.set(KEY_PLAYER_CONTROLS_AUTO_HIDE_SECONDS, seconds.toString())
+        playerControlsAutoHideSeconds.value = seconds
     }
 
     override val playerBoostSpeedFlow: Flow<Float> = playerBoostSpeed.asStateFlow()
@@ -499,6 +511,7 @@ class StoredPikoPreferences(
         const val KEY_DOWNLOAD_MAX_HEIGHT = "download.defaultMaxHeight"
         const val KEY_PLAYER_SEEK_STEP_SECONDS = "player.seekStepSeconds"
         const val KEY_PLAYER_BOOST_SPEED = "player.boostSpeed"
+        const val KEY_PLAYER_CONTROLS_AUTO_HIDE_SECONDS = "player.controlsAutoHideSeconds"
         const val KEY_FOLDER_MAP_OPEN = "ui.folderMapOpen"
         const val KEY_FOLDER_MAP_PINNED = "ui.folderMapPinned"
         const val KEY_HEURISTIC = "ui.heuristicFilter"
