@@ -1,4 +1,4 @@
-name: Windows Magnet Filter Debug
+name: Windows x64 Debug Installer
 
 on:
   push:
@@ -7,24 +7,16 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: windows-magnet-debug-${{ github.ref }}
+  group: windows-x64-installer-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  windows-debug:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: windows-latest
-            arch: x64
-          - runner: windows-11-arm
-            arch: arm64
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 70
+  windows-x64-installer:
+    runs-on: windows-latest
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
@@ -33,34 +25,39 @@ jobs:
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v5
 
-      # Keep this feature build focused on the magnet filter. The full shared
-      # suite currently has unrelated intermittent proxy loopback test failures.
-      - name: Test magnet filter and Windows preferences
+      # The isolated PikoDebug package has its own MSI upgrade identity,
+      # launcher and settings directory; it cannot replace a regular Piko MSI.
+      - name: Install WiX Toolset
+        shell: pwsh
+        run: choco install wixtoolset -y --no-progress
+
+      - name: Test magnet filtering, player settings and desktop preferences
         shell: pwsh
         run: |
-          .\gradlew.bat :shared:desktopTest --tests '*MagnetFileSelectionFilterTest*' --no-daemon --stacktrace
+          .\gradlew.bat :shared:desktopTest --tests '*MagnetFileSelectionFilterTest*' --tests '*StoredPikoPreferencesTest*' --no-daemon --stacktrace
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           .\gradlew.bat :desktopApp:desktopTest --tests '*DesktopSettingsStoreTest*' --no-daemon --stacktrace
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Build Windows test application
+      - name: Build Windows x64 debug MSI
         shell: pwsh
         run: |
-          .\gradlew.bat :desktopApp:createDistributable --no-daemon --stacktrace
+          .\gradlew.bat :desktopApp:packageMsi "-PpikoDesktopPackageName=PikoDebug" "-PpikoDesktopUpgradeUuid=1c41ff9d-72f1-42d0-af5c-b896581cb3b8" --no-daemon --stacktrace
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Archive Windows application folder
+      - name: Collect installer
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $app = 'desktopApp/build/compose/binaries/main/app/Piko'
-          if (!(Test-Path "$app/Piko.exe")) { throw "Piko.exe was not produced in $app" }
+          $msi = Get-ChildItem 'desktopApp/build/compose/binaries/main/msi/*.msi' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (!$msi) { throw 'Windows x64 MSI installer was not generated' }
           New-Item -ItemType Directory -Path dist -Force | Out-Null
-          Compress-Archive -Path $app -DestinationPath "dist/piko-windows-${{ matrix.arch }}-magnet-debug.zip" -CompressionLevel Optimal
+          Copy-Item $msi.FullName 'dist/piko-windows-x64-debug-installer.msi'
+          Get-Item dist/*.msi | Format-Table Name,Length
 
       - uses: actions/upload-artifact@v6
         with:
-          name: piko-windows-${{ matrix.arch }}-magnet-debug
-          path: dist/*.zip
+          name: piko-windows-x64-debug-installer
+          path: dist/piko-windows-x64-debug-installer.msi
           if-no-files-found: error
           retention-days: 14
