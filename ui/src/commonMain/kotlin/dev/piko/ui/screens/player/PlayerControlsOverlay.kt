@@ -142,6 +142,7 @@ fun MobilePlayerControls(
     onSeekStepChange: ((Int) -> Unit)? = null,
     longPressSpeed: Float = PlayerGestureDefaults.BOOST_SPEED,
     onLongPressSpeedChange: ((Float) -> Unit)? = null,
+    controlsAutoHideSeconds: Int = dev.piko.data.auth.PlayerControlsTiming.AUTO_HIDE_DEFAULT_SECONDS,
     playbackStats: (() -> List<PlaybackStatsSection>)? = null,
     loadingSpeedText: String? = null,
     registerKeyFallback: (((KeyEvent) -> Boolean)?) -> Unit = {},
@@ -175,6 +176,7 @@ fun MobilePlayerControls(
         playbackSpeed = playbackSpeed,
         rotationDegrees = rotationDegrees,
         longPressSpeed = longPressSpeed,
+        controlsAutoHideSeconds = controlsAutoHideSeconds,
         errorMessage = errorMessage,
         onSpeedChange = onSpeedChange,
     )
@@ -348,13 +350,13 @@ fun MobilePlayerControls(
                 volume = volume,
                 onGestureChange = { ui.activeGesture = it },
                 onToggleControls = {
-                    if (pointerSource.isTouchLike) {
-                        ui.controlsVisible = !ui.controlsVisible
-                    } else {
-                        if (!rootSelfFocused) runCatching { focusRequester.requestFocus() }
-                        ui.interacted()
-                        onPlayPause()
+                    // A single tap/click only changes the chrome, never playback.
+                    // Double-tap and the explicit play/pause button retain their actions.
+                    if (!pointerSource.isTouchLike && !rootSelfFocused) {
+                        runCatching { focusRequester.requestFocus() }
                     }
+                    ui.controlsVisible = !ui.controlsVisible
+                    if (ui.controlsVisible) ui.interacted()
                 },
                 onSeekTo = { target ->
                     ui.recordSettledSeek(target)
