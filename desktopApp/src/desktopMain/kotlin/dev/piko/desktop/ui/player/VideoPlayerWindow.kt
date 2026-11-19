@@ -356,6 +356,8 @@ private fun VideoPlayerContent(
     val seekStepSeconds by services.preferences.playerSeekStepSecondsFlow
         .collectAsState(initial = PlayerGestureDefaults.SEEK_STEP_SECONDS)
     val longPressSpeed by services.preferences.playerBoostSpeedFlow.collectAsState(initial = PlayerGestureDefaults.BOOST_SPEED)
+    val controlsAutoHideSeconds by services.preferences.playerControlsAutoHideSecondsFlow
+        .collectAsState(initial = dev.piko.data.auth.PlayerControlsTiming.AUTO_HIDE_DEFAULT_SECONDS)
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(request) {
@@ -546,6 +548,7 @@ private fun VideoPlayerContent(
                 onSeekStepChange = handleSeekStepChange,
                 longPressSpeed = longPressSpeed,
                 onLongPressSpeedChange = handleLongPressSpeedChange,
+                controlsAutoHideSeconds = controlsAutoHideSeconds,
                 playbackStats = state::stats,
                 audioTracks = state.audioTracks,
                 selectedAudioTrackId = state.selectedAudioTrackId,
