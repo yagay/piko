@@ -218,7 +218,7 @@ fun SettingsScreen(
                 title = if (seconds == 0)
                     tr("始终显示", "Always show", "常に表示", "항상 표시", "始終顯示")
                 else
-                    tr("$seconds 秒", "$seconds seconds", "$seconds 秒", "$seconds초", "$seconds 秒"),
+                    tr("$seconds 秒", "$seconds seconds", "$seconds 秒", "${seconds}초", "$seconds 秒"),
                 selected = controlsAutoHideSeconds == seconds,
                 onClick = {
                     scope.launch { sessionManager.setPlayerControlsAutoHideSeconds(seconds) }
@@ -510,7 +510,7 @@ fun SettingsScreen(
                                 title = tr("控制栏自动隐藏时间", "Controls auto-hide delay", "操作欄の自動非表示時間", "컨트롤 자동 숨김 시간", "控制列自動隱藏時間"),
                                 supporting = if (controlsAutoHideSeconds == 0)
                                     tr("始终显示；单击画面可手动隐藏或显示", "Always show; tap or click to hide/show", "常に表示。タップで表示切替", "항상 표시, 탭하여 표시 전환", "始終顯示；單擊可切換")
-                                else tr("$controlsAutoHideSeconds 秒后隐藏；单击画面切换显隐", "Hide after $controlsAutoHideSeconds seconds; tap or click to toggle", "$controlsAutoHideSeconds 秒後に非表示；タップで切替", "$controlsAutoHideSeconds초 후 숨김；탭하여 전환", "$controlsAutoHideSeconds 秒後隱藏；單擊切換顯隱"),
+                                else tr("$controlsAutoHideSeconds 秒后隐藏；单击画面切换显隐", "Hide after $controlsAutoHideSeconds seconds; tap or click to toggle", "$controlsAutoHideSeconds 秒後に非表示；タップで切替", "${controlsAutoHideSeconds}초 후 숨김；탭하여 전환", "$controlsAutoHideSeconds 秒後隱藏；單擊切換顯隱"),
                                 onClick = { showControlsAutoHide = true },
                                 trailingIcon = null,
                             )
