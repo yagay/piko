@@ -1,4 +1,4 @@
-name: Windows x64 Debug Installer
+name: Windows x64 Portable Debug
 
 on:
   push:
@@ -7,14 +7,14 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: windows-x64-installer-${{ github.ref }}
+  group: windows-x64-portable-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  windows-x64-installer:
+  windows-x64-portable:
     runs-on: windows-latest
     timeout-minutes: 75
     steps:
@@ -25,12 +25,6 @@ jobs:
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v5
 
-      # The isolated PikoDebug package has its own MSI upgrade identity,
-      # launcher and settings directory; it cannot replace a regular Piko MSI.
-      - name: Install WiX Toolset
-        shell: pwsh
-        run: choco install wixtoolset -y --no-progress
-
       - name: Test magnet filtering, player settings and desktop preferences
         shell: pwsh
         run: |
@@ -39,25 +33,26 @@ jobs:
           .\gradlew.bat :desktopApp:desktopTest --tests '*DesktopSettingsStoreTest*' --no-daemon --stacktrace
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Build Windows x64 debug MSI
+      - name: Build Windows x64 portable application
         shell: pwsh
         run: |
-          .\gradlew.bat :desktopApp:packageMsi "-PpikoDesktopPackageName=PikoDebug" "-PpikoDesktopUpgradeUuid=1c41ff9d-72f1-42d0-af5c-b896581cb3b8" --no-daemon --stacktrace
+          .\gradlew.bat :desktopApp:createDistributable --no-daemon --stacktrace
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Collect installer
+      - name: Package portable app with local data marker
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $msi = Get-ChildItem 'desktopApp/build/compose/binaries/main/msi/*.msi' -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (!$msi) { throw 'Windows x64 MSI installer was not generated' }
+          $app = 'desktopApp/build/compose/binaries/main/app/Piko'
+          if (!(Test-Path "$app/Piko.exe")) { throw "Piko.exe was not produced in $app" }
           New-Item -ItemType Directory -Path dist -Force | Out-Null
-          Copy-Item $msi.FullName 'dist/piko-windows-x64-debug-installer.msi'
-          Get-Item dist/*.msi | Format-Table Name,Length
+          & .github/scripts/pack-portable.ps1 -AppDir $app -Output 'dist/piko-windows-x64-debug-portable.7z'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (!(Test-Path 'dist/piko-windows-x64-debug-portable.7z')) { throw 'Portable archive was not generated' }
 
       - uses: actions/upload-artifact@v6
         with:
-          name: piko-windows-x64-debug-installer
-          path: dist/piko-windows-x64-debug-installer.msi
+          name: piko-windows-x64-debug-portable
+          path: dist/piko-windows-x64-debug-portable.7z
           if-no-files-found: error
           retention-days: 14
