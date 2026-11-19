@@ -151,6 +151,8 @@ fun MediampVideoPlayerScreen(
         .collectAsStateWithLifecycle(initialValue = PlayerGestureDefaults.SEEK_STEP_SECONDS)
     val longPressSpeed by preferences.playerBoostSpeedFlow
         .collectAsStateWithLifecycle(initialValue = PlayerGestureDefaults.BOOST_SPEED)
+    val controlsAutoHideSeconds by preferences.playerControlsAutoHideSecondsFlow
+        .collectAsStateWithLifecycle(initialValue = dev.piko.data.auth.PlayerControlsTiming.AUTO_HIDE_DEFAULT_SECONDS)
 
     LaunchedEffect(initialFileId, externalPlaylist) {
         if (externalPlaylist != null) {
@@ -539,6 +541,7 @@ fun MediampVideoPlayerScreen(
                 onSeekStepChange = handleSeekStepChange,
                 longPressSpeed = longPressSpeed,
                 onLongPressSpeedChange = handleLongPressSpeedChange,
+                controlsAutoHideSeconds = controlsAutoHideSeconds,
                 playbackStats = state::stats,
                 audioTracks = state.audioTracks,
                 selectedAudioTrackId = state.selectedAudioTrackId,
