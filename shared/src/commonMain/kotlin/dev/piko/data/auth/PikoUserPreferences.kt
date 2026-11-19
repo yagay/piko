@@ -25,6 +25,14 @@ data class SnailMode(
     }
 }
 
+/** 播放器控制栏的自动收起时间（秒）；0 为始终显示，默认延长到 10 秒。 */
+object PlayerControlsTiming {
+    const val AUTO_HIDE_DEFAULT_SECONDS = 10
+    val AutoHideChoicesSeconds = listOf(0, 5, 8, 10, 15, 20, 30, 60)
+    fun validated(seconds: Int): Int =
+        seconds.takeIf { it in AutoHideChoicesSeconds } ?: AUTO_HIDE_DEFAULT_SECONDS
+}
+
 /** 播放器进退步长与长按倍速的默认值与可选档位。存储两端与播放设置面板共用这一份。 */
 object PlayerGestureDefaults {
     const val SEEK_STEP_SECONDS = 10
@@ -285,6 +293,10 @@ interface PikoUserPreferences {
      */
     val downloadMaxHeightFlow: Flow<Int?>
     suspend fun setDownloadMaxHeight(height: Int?)
+
+    /** 控件自动隐藏时间（秒），0 = 始终显示。各设备单独设置以适应手机和鼠标操作。 */
+    val playerControlsAutoHideSecondsFlow: Flow<Int> get() = flowOf(PlayerControlsTiming.AUTO_HIDE_DEFAULT_SECONDS)
+    suspend fun setPlayerControlsAutoHideSeconds(seconds: Int) {}
 
     /** 播放器双击、方向键进退一步的秒数，默认 10。在播放设置里改，跟着设置同步：这是看片的习惯，不看设备。 */
     val playerSeekStepSecondsFlow: Flow<Int>
