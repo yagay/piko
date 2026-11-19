@@ -1,4 +1,5 @@
 name: Android Folder Cleanup Debug
+# ARM64 Debug build of the latest player controls and auto-hide settings.
 
 on:
   push:
