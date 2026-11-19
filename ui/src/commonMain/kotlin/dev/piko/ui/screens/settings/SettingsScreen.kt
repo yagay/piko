@@ -205,6 +205,28 @@ fun SettingsScreen(
     }
     var showPlaybackQuality by remember { mutableStateOf(false) }
     val playbackMaxHeight by sessionManager.playbackMaxHeightFlow.collectAsStateWithLifecycle(initialValue = 0)
+    val controlsAutoHideSeconds by sessionManager.playerControlsAutoHideSecondsFlow
+        .collectAsStateWithLifecycle(initialValue = dev.piko.data.auth.PlayerControlsTiming.AUTO_HIDE_DEFAULT_SECONDS)
+    var showControlsAutoHide by remember { mutableStateOf(false) }
+    if (showControlsAutoHide) SettingsChoiceDialog(
+        icon = Icons.Outlined.SlowMotionVideo,
+        title = tr("播放器控制栏自动隐藏", "Player controls auto-hide", "プレーヤー操作欄の自動非表示", "플레이어 컨트롤 자동 숨김", "播放器控制列自動隱藏"),
+        onDismiss = { showControlsAutoHide = false },
+    ) {
+        dev.piko.data.auth.PlayerControlsTiming.AutoHideChoicesSeconds.forEach { seconds ->
+            SettingsChoiceOption(
+                title = if (seconds == 0)
+                    tr("始终显示", "Always show", "常に表示", "항상 표시", "始終顯示")
+                else
+                    tr("$seconds 秒", "$seconds seconds", "$seconds 秒", "$seconds초", "$seconds 秒"),
+                selected = controlsAutoHideSeconds == seconds,
+                onClick = {
+                    scope.launch { sessionManager.setPlayerControlsAutoHideSeconds(seconds) }
+                    showControlsAutoHide = false
+                },
+            )
+        }
+    }
     val magnetRetentionDays by sessionManager.magnetPlaybackRetentionDaysFlow.collectAsStateWithLifecycle(initialValue = 7)
     var showMagnetRetention by remember { mutableStateOf(false) }
     if (showMagnetRetention) SettingsChoiceDialog(
@@ -483,6 +505,15 @@ fun SettingsScreen(
                             )
                         }
                         SettingsGroup(tr("播放", "Play", "再生", "재생", "播放")) {
+                            SettingsNavigationRow(
+                                icon = Icons.Outlined.SlowMotionVideo,
+                                title = tr("控制栏自动隐藏时间", "Controls auto-hide delay", "操作欄の自動非表示時間", "컨트롤 자동 숨김 시간", "控制列自動隱藏時間"),
+                                supporting = if (controlsAutoHideSeconds == 0)
+                                    tr("始终显示；单击画面可手动隐藏或显示", "Always show; tap or click to hide/show", "常に表示。タップで表示切替", "항상 표시, 탭하여 표시 전환", "始終顯示；單擊可切換")
+                                else tr("$controlsAutoHideSeconds 秒后隐藏；单击画面切换显隐", "Hide after $controlsAutoHideSeconds seconds; tap or click to toggle", "$controlsAutoHideSeconds 秒後に非表示；タップで切替", "$controlsAutoHideSeconds초 후 숨김；탭하여 전환", "$controlsAutoHideSeconds 秒後隱藏；單擊切換顯隱"),
+                                onClick = { showControlsAutoHide = true },
+                                trailingIcon = null,
+                            )
                             SettingsNavigationRow(
                                 icon = Icons.Outlined.HighQuality,
                                 title = tr("播放画质", "Playback quality", "再生画質", "재생 화질", "播放畫質"),
