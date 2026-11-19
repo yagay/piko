@@ -1,6 +1,7 @@
 package dev.piko.data.auth
 
 import dev.piko.shared.i18n.tr
+import dev.piko.data.auth.PlayerControlsTiming
 
 import android.content.Context
 import androidx.datastore.core.DataMigration
@@ -299,6 +300,21 @@ class SessionManager(private val context: Context) : PikoUserPreferences {
     override suspend fun setPlayerSeekStepSeconds(seconds: Int) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.PLAYER_SEEK_STEP_SECONDS] = seconds
+        }
+    }
+
+    override val playerControlsAutoHideSecondsFlow: Flow<Int> =
+        preference {
+            PlayerControlsTiming.validated(
+                it[intPreferencesKey("player_controls_auto_hide_seconds")]
+                    ?: PlayerControlsTiming.AUTO_HIDE_DEFAULT_SECONDS,
+            )
+        }
+
+    override suspend fun setPlayerControlsAutoHideSeconds(seconds: Int) {
+        require(seconds in PlayerControlsTiming.AutoHideChoicesSeconds)
+        context.dataStore.edit { preferences ->
+            preferences[intPreferencesKey("player_controls_auto_hide_seconds")] = seconds
         }
     }
 
