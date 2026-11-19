@@ -50,6 +50,20 @@ class StoredPikoPreferencesTest {
     }
 
     @Test
+    fun playerControlsAutoHideSettingsPersistAndInvalidValuesFallBack() = runBlocking {
+        val settings = FakeSettings()
+        val prefs = preferences(settings)
+        assertEquals(10, prefs.playerControlsAutoHideSecondsFlow.first())
+        prefs.setPlayerControlsAutoHideSeconds(30)
+        assertEquals(30, prefs.playerControlsAutoHideSecondsFlow.first())
+        assertEquals(30, preferences(settings.reopen()).playerControlsAutoHideSecondsFlow.first())
+        prefs.setPlayerControlsAutoHideSeconds(0)
+        assertEquals(0, preferences(settings.reopen()).playerControlsAutoHideSecondsFlow.first())
+        assertFailsWith<IllegalArgumentException> { prefs.setPlayerControlsAutoHideSeconds(999) }
+        assertEquals(10, preferences(FakeSettings(mapOf("player.controlsAutoHideSeconds" to "999"))).playerControlsAutoHideSecondsFlow.first())
+    }
+
+    @Test
     fun nullableSettingsKeepUnsetDistinctFromOriginalQuality() = runBlocking {
         val settings = FakeSettings()
         val prefs = preferences(settings)
