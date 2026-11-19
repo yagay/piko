@@ -49,8 +49,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-private const val CONTROLS_HIDE_DELAY_MILLIS = 4_500L
-private const val CURSOR_HIDE_DELAY_MILLIS = CONTROLS_HIDE_DELAY_MILLIS
+private const val CURSOR_HIDE_DELAY_MILLIS = 4_500L
 private const val RESUME_TIP_DURATION_MILLIS = 5_000L
 private const val DOUBLE_TAP_FEEDBACK_MILLIS = 700L
 private const val SEEK_PEEK_MILLIS = 900L
@@ -594,6 +593,7 @@ internal fun rememberPlayerControlsUiState(
     playbackSpeed: Float?,
     rotationDegrees: Int?,
     longPressSpeed: Float,
+    controlsAutoHideSeconds: Int,
     errorMessage: String?,
     onSpeedChange: (Float) -> Unit,
 ): PlayerControlsUiState {
@@ -614,13 +614,18 @@ internal fun rememberPlayerControlsUiState(
         state.showResumeTip = resumedFromMillis != null
     }
 
-    val hideDelayMillis = remember(accessibilityManager) {
-        accessibilityManager?.calculateRecommendedTimeoutMillis(
-            originalTimeoutMillis = CONTROLS_HIDE_DELAY_MILLIS,
-            containsIcons = true,
-            containsText = true,
-            containsControls = true,
-        ) ?: CONTROLS_HIDE_DELAY_MILLIS
+    val hideDelayMillis = remember(accessibilityManager, controlsAutoHideSeconds) {
+        val chosenSeconds = dev.piko.data.auth.PlayerControlsTiming.validated(controlsAutoHideSeconds)
+        if (chosenSeconds == 0) Long.MAX_VALUE
+        else {
+            val configuredMillis = chosenSeconds * 1_000L
+            accessibilityManager?.calculateRecommendedTimeoutMillis(
+                originalTimeoutMillis = configuredMillis,
+                containsIcons = true,
+                containsText = true,
+                containsControls = true,
+            ) ?: configuredMillis
+        }
     }
 
     val windowFocused = LocalWindowInfo.current.isWindowFocused
